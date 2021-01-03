@@ -14,7 +14,10 @@ if ( file_exists( $wp_root_path . '__wp__' ) ) {
 	define( 'ABSPATH', $wp_root_path );
 }
 
-define( 'WPINC', 'wp-includes/' );
+if ( ! defined( 'WPINC' ) ) {
+	define( 'WPINC', 'wp/wp-includes/' );
+}
+
 if ( ! defined( 'WP_CONTENT_DIR' ) ) {
 	define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content/' );
 }
