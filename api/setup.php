@@ -15,7 +15,7 @@ if ( file_exists( $wp_root_path . '__wp__' ) ) {
 }
 
 if ( ! defined( 'WPINC' ) ) {
-	define( 'WPINC', 'wp/wp-includes/' );
+	define( 'WPINC', 'wp-includes/' );
 }
 
 if ( ! defined( 'WP_CONTENT_DIR' ) ) {
