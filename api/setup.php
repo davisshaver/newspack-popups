@@ -21,6 +21,7 @@ if ( ! defined( 'WPINC' ) ) {
 if ( ! defined( 'WP_CONTENT_DIR' ) ) {
 	define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content/' );
 }
+
 if ( ! defined( 'WP_DEBUG' ) ) {
 	define( 'WP_DEBUG', false );
 }
@@ -49,9 +50,9 @@ function trailingslashit( $string ) {
 	return rtrim( $string, '/\\' ) . '/';
 }
 
-if ( file_exists( ABSPATH . WPINC . '/wp-db.php' ) ) {
-	require_once ABSPATH . WPINC . '/wp-db.php';
-	require_once ABSPATH . WPINC . '/functions.php';
+if ( file_exists( ABSPATH . WPINC . 'wp-db.php' ) ) {
+	require_once ABSPATH . WPINC . 'wp-db.php';
+	require_once ABSPATH . WPINC . 'functions.php';
 } else {
 	die( "{ error: 'no_wordpress' }" );
 }
@@ -59,7 +60,7 @@ if ( file_exists( ABSPATH . WPINC . '/wp-db.php' ) ) {
 if ( file_exists( WP_CONTENT_DIR . '/object-cache.php' ) ) {
 	require WP_CONTENT_DIR . '/object-cache.php';
 } else {
-	require_once ABSPATH . WPINC . '/cache.php';
+	require_once ABSPATH . WPINC . 'cache.php';
 }
 
 global $wpdb;
