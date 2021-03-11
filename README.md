@@ -4,7 +4,7 @@ AMP-compatible popup notifications.
 
 ## Config file
 
-Newspack Campaigns requires a custom config file to provide database credentials and other key data to the lightweight API. The file is named `newspack-popups-config.php` and should automatically be created at the root of the WordPress installation. If for any reason it is not created automatically, manually add this file using the following template:
+Newspack Campaigns requires a custom config file to provide database credentials and other key data to the lightweight API. The file (`wp-content/newspack-popups-config.php`) should automatically be created. If it is not, manually add this file using the following template:
 
 ```
 <?php
@@ -14,17 +14,18 @@ define( 'DB_NAME', 'local' );
 define( 'DB_HOST', 'localhost' );
 define( 'DB_CHARSET', 'utf8' );
 define( 'DB_PREFIX', 'wp_' );
+define( 'NEWSPACK_POPUPS_DEBUG', true ); // Optional, for debugging.
 ```
 
 ## Segmentation features
 
-The segmentation features rely on visit logging. This is currently opt-in, managed by the `ENABLE_CAMPAIGN_EVENT_LOGGING` flag defined in the aforementioned file:
+The segmentation features rely on visit logging. This is on by default, but can be turned off by setting the `DISABLE_CAMPAIGN_EVENT_LOGGING` flag in the aforementioned file:
 
 ```
-define( 'ENABLE_CAMPAIGN_EVENT_LOGGING', true );
+define( 'DISABLE_CAMPAIGN_EVENT_LOGGING', true );
 ```
 
-The segmentation feature causes amp-access to be added to all pages whether or not campaigns are present. To override this behavior use the `newspack_popups_suppress_insert_amp_access` filter. The filter receives an array of campaigns for the current page. To suppress, return true, for example:
+The segmentation feature causes amp-access to be added to all pages whether or not prompts are present. To override this behavior use the `newspack_popups_suppress_insert_amp_access` filter. The filter receives an array of prompts for the current page. To suppress, return true, for example:
 
 ```
 add_filter(

@@ -34,75 +34,12 @@ final class Newspack_Popups_Model {
 	public static function retrieve_popups( $include_unpublished = false ) {
 		$args = [
 			'post_type'      => Newspack_Popups::NEWSPACK_POPUPS_CPT,
-			'post_status'    => $include_unpublished ? [ 'publish', 'draft' ] : 'publish',
+			'post_status'    => $include_unpublished ? [ 'draft', 'pending', 'future', 'publish' ] : 'publish',
 			'posts_per_page' => 100,
 		];
 
-		$sitewide_default_id = get_option( Newspack_Popups::NEWSPACK_POPUPS_SITEWIDE_DEFAULT, null );
-
 		$popups = self::retrieve_popups_with_query( new WP_Query( $args ), true );
-		foreach ( $popups as &$popup ) {
-			// UI will not allow for setting inline as sitewide default, but there may be
-			// legacy popups from before this update.
-			if ( self::is_overlay( $popup ) ) {
-				$popup['sitewide_default'] = absint( $sitewide_default_id ) === absint( $popup['id'] );
-			}
-		}
 		return $popups;
-	}
-
-	/**
-	 * Set post time to now, making it the sitewide popup.
-	 *
-	 * @param integer $id ID of the Popup to make sitewide default.
-	 */
-	public static function set_sitewide_popup( $id ) {
-		$popup = self::retrieve_popup_by_id( $id );
-		if ( ! $popup ) {
-			return new \WP_Error(
-				'newspack_popups_popup_doesnt_exist',
-				esc_html__( 'The Campaign specified does not exist.', 'newspack-popups' ),
-				[
-					'status' => 400,
-					'level'  => 'fatal',
-				]
-			);
-		}
-
-		// Such update will not be permitted by the UI, but it's handled just to be explicit about it.
-		if ( self::is_inline( $popup ) ) {
-			return new \WP_Error(
-				'newspack_popups_inline_sitewide',
-				esc_html__( 'An inline Campaign cannot be a sitewide default.', 'newspack-popups' ),
-				[
-					'status' => 400,
-					'level'  => 'fatal',
-				]
-			);
-		}
-		return update_option( Newspack_Popups::NEWSPACK_POPUPS_SITEWIDE_DEFAULT, $id );
-	}
-
-	/**
-	 * If a certain post is sitewide default, clear it.
-	 *
-	 * @param integer $id ID of the Popup to unset as sitewide default.
-	 */
-	public static function unset_sitewide_popup( $id ) {
-		$popup = self::retrieve_popup_by_id( $id );
-		if ( ! $popup ) {
-			return new \WP_Error(
-				'newspack_popups_popup_doesnt_exist',
-				esc_html__( 'The Campaign specified does not exist.', 'newspack-popups' ),
-				[
-					'status' => 400,
-					'level'  => 'fatal',
-				]
-			);
-		}
-		if ( absint( get_option( Newspack_Popups::NEWSPACK_POPUPS_SITEWIDE_DEFAULT, null ) ) === absint( $id ) ) {
-			return update_option( Newspack_Popups::NEWSPACK_POPUPS_SITEWIDE_DEFAULT, null );
-		}
 	}
 
 	/**
@@ -117,7 +54,7 @@ final class Newspack_Popups_Model {
 		if ( ! $popup ) {
 			return new \WP_Error(
 				'newspack_popups_popup_doesnt_exist',
-				esc_html__( 'The Campaign specified does not exist.', 'newspack-popups' ),
+				esc_html__( 'The prompt specified does not exist.', 'newspack-popups' ),
 				[
 					'status' => 400,
 					'level'  => 'fatal',
@@ -154,7 +91,7 @@ final class Newspack_Popups_Model {
 		if ( ! $popup ) {
 			return new \WP_Error(
 				'newspack_popups_popup_doesnt_exist',
-				esc_html__( 'The Campaign specified does not exist.', 'newspack-popups' ),
+				esc_html__( 'The prompt specified does not exist.', 'newspack-popups' ),
 				[
 					'status' => 400,
 					'level'  => 'fatal',
@@ -164,7 +101,7 @@ final class Newspack_Popups_Model {
 		foreach ( $options as $key => $value ) {
 			switch ( $key ) {
 				case 'frequency':
-					if ( ! in_array( $value, [ 'test', 'never', 'once', 'daily', 'always' ] ) ) {
+					if ( ! in_array( $value, [ 'once', 'daily', 'always', 'manual' ] ) ) {
 						return new \WP_Error(
 							'newspack_popups_invalid_option_value',
 							esc_html__( 'Invalid frequency value.', 'newspack-popups' ),
@@ -193,12 +130,13 @@ final class Newspack_Popups_Model {
 				case 'trigger_scroll_progress':
 				case 'utm_suppression':
 				case 'selected_segment_id':
+				case 'dismiss_text':
 					update_post_meta( $id, $key, esc_attr( $value ) );
 					break;
 				default:
 					return new \WP_Error(
 						'newspack_popups_invalid_option',
-						esc_html__( 'Invalid Campaign option.', 'newspack-popups' ),
+						esc_html__( 'Invalid prompt option.', 'newspack-popups' ),
 						[
 							'status' => 400,
 							'level'  => 'fatal',
@@ -209,76 +147,94 @@ final class Newspack_Popups_Model {
 	}
 
 	/**
-	 * Retrieve all inline popups.
+	 * Retrieve all overlay popups.
 	 *
-	 * @return array Inline popup objects.
+	 * @param  boolean     $include_unpublished Whether to include unpublished prompts.
+	 * @param  int|boolean $campaign_id Campaign term ID, or false to ignore campaign.
+	 * @return array Overlay popup objects.
 	 */
-	public static function retrieve_inline_popups() {
+	public static function retrieve_overlay_popups( $include_unpublished = false, $campaign_id = false ) {
 		$args = [
-			'post_type'    => Newspack_Popups::NEWSPACK_POPUPS_CPT,
-			'post_status'  => 'publish',
-			'meta_key'     => 'placement',
+			'post_type'      => Newspack_Popups::NEWSPACK_POPUPS_CPT,
+			'post_status'    => $include_unpublished ? [ 'draft', 'pending', 'future', 'publish' ] : 'publish',
+			'meta_key'       => 'placement',
 			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-			'meta_value'   => self::$inline_placements,
-			'meta_compare' => 'IN',
+			'meta_value'     => self::$overlay_placements,
+			'meta_compare'   => 'IN',
+			'posts_per_page' => 100,
 		];
+
+		$tax_query = [
+			'taxonomy' => 'category',
+			'operator' => 'NOT EXISTS',
+		];
+
+		$args['tax_query'] = [ $tax_query ]; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+
+		// If previewing specific campaign.
+		if ( ! empty( $campaign_id ) ) {
+			$campaign_tax_query = [ 'taxonomy' => Newspack_Popups::NEWSPACK_POPUPS_TAXONOMY ];
+
+			if ( -1 === (int) $campaign_id ) {
+				$campaign_tax_query['operator'] = 'NOT EXISTS';
+			} else {
+				$campaign_tax_query['field'] = 'term_id';
+				$campaign_tax_query['terms'] = [ $campaign_id ];
+			}
+
+			$args['tax_query'][] = $campaign_tax_query;
+		}
+
+		if ( ! empty( $campaign_id ) ) {
+			$args['tax_query']['relation'] = 'AND';
+		}
 
 		return self::retrieve_popups_with_query( new WP_Query( $args ) );
 	}
 
 	/**
-	 * Retrieve all popups from a given group.
+	 * Retrieve all inline prompts.
 	 *
-	 * @param string $group_slugs Group slugs.
+	 * @param  boolean     $include_unpublished Whether to include unpublished prompts.
+	 * @param  int|boolean $campaign_id Campaign term ID, or false to ignore campaign.
 	 * @return array Inline popup objects.
 	 */
-	public static function retrieve_group_popups( $group_slugs ) {
+	public static function retrieve_inline_popups( $include_unpublished = false, $campaign_id = false ) {
 		$args = [
-			'post_type'   => Newspack_Popups::NEWSPACK_POPUPS_CPT,
-			'post_status' => 'publish',
-			'tax_query'   => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-				[
-					'taxonomy' => Newspack_Popups::NEWSPACK_POPUPS_TAXONOMY,
-					'field'    => 'term_id',
-					'terms'    => explode( ',', $group_slugs ),
-				],
-			],
+			'post_type'      => Newspack_Popups::NEWSPACK_POPUPS_CPT,
+			'post_status'    => $include_unpublished ? [ 'draft', 'pending', 'future', 'publish' ] : 'publish',
+			'meta_key'       => 'placement',
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			'meta_value'     => self::$inline_placements,
+			'meta_compare'   => 'IN',
+			'posts_per_page' => 100,
 		];
+
+		// If previewing specific campaign.
+		if ( ! empty( $campaign_id ) ) {
+			$tax_query = [ 'taxonomy' => Newspack_Popups::NEWSPACK_POPUPS_TAXONOMY ];
+
+			if ( -1 === (int) $campaign_id ) {
+				$tax_query['operator'] = 'NOT EXISTS';
+			} else {
+				$tax_query['field'] = 'term_id';
+				$tax_query['terms'] = [ $campaign_id ];
+			}
+
+			$args['tax_query'] = [ $tax_query ]; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		}
 
 		return self::retrieve_popups_with_query( new WP_Query( $args ) );
 	}
 
 	/**
-	 * Get overlay test popups.
+	 * Retrieve overlay popups matching post categories.
 	 *
-	 * @return array Overlay test popup objects.
+	 * @param  boolean     $include_unpublished Whether to include unpublished prompts.
+	 * @param  int|boolean $campaign_id Campaign term ID, or false to ignore campaign.
+	 * @return array|null Array of popup objects.
 	 */
-	public static function retrieve_overlay_test_popups() {
-		$args = [
-			'post_type'   => Newspack_Popups::NEWSPACK_POPUPS_CPT,
-			'post_status' => 'publish',
-			'meta_query'  => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				[
-					'key'     => 'placement',
-					'value'   => self::$overlay_placements,
-					'compare' => 'IN',
-				],
-				[
-					'key'   => 'frequency',
-					'value' => 'test',
-				],
-			],
-		];
-
-		return self::retrieve_popups_with_query( new WP_Query( $args ) );
-	}
-
-	/**
-	 * Retrieve first overlay popup matching post categries.
-	 *
-	 * @return object|null Popup object.
-	 */
-	public static function retrieve_category_overlay_popup() {
+	public static function retrieve_category_overlay_popups( $include_unpublished = false, $campaign_id = false ) {
 		$post_categories = get_the_category();
 
 		if ( empty( $post_categories ) ) {
@@ -288,16 +244,31 @@ final class Newspack_Popups_Model {
 		$args = [
 			'post_type'      => Newspack_Popups::NEWSPACK_POPUPS_CPT,
 			'posts_per_page' => 1,
-			'post_status'    => 'publish',
+			'post_status'    => $include_unpublished ? [ 'draft', 'pending', 'future', 'publish' ] : 'publish',
 			'category__in'   => array_column( $post_categories, 'term_id' ),
 			'meta_key'       => 'placement',
 			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 			'meta_value'     => self::$overlay_placements,
 			'meta_compare'   => 'IN',
+			'posts_per_page' => 100,
 		];
 
+		// If previewing specific campaign.
+		if ( ! empty( $campaign_id ) ) {
+			$tax_query = [ 'taxonomy' => Newspack_Popups::NEWSPACK_POPUPS_TAXONOMY ];
+
+			if ( -1 === (int) $campaign_id ) {
+				$tax_query['operator'] = 'NOT EXISTS';
+			} else {
+				$tax_query['field'] = 'term_id';
+				$tax_query['terms'] = [ $campaign_id ];
+			}
+
+			$args['tax_query'] = [ $tax_query ]; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
+		}
+
 		$popups = self::retrieve_popups_with_query( new WP_Query( $args ) );
-		return count( $popups ) > 0 ? $popups[0] : null;
+		return count( $popups ) > 0 ? $popups : null;
 	}
 
 	/**
@@ -366,10 +337,15 @@ final class Newspack_Popups_Model {
 		if ( $query->have_posts() ) {
 			while ( $query->have_posts() ) {
 				$query->the_post();
-				$popups[] = self::create_popup_object(
+				$popup = self::create_popup_object(
 					get_post( get_the_ID() ),
 					$include_categories
 				);
+				$popup = self::deprecate_test_never( $popup, 'publish' === $query->get( 'post_status', null ) );
+
+				if ( $popup ) {
+					$popups[] = $popup;
+				}
 			}
 			wp_reset_postdata();
 		}
@@ -377,9 +353,40 @@ final class Newspack_Popups_Model {
 	}
 
 	/**
+	 * Deprecate Test Mode and Never frequency.
+	 *
+	 * @param object $popup The popup.
+	 * @param bool   $published_only Whether the result must be a published post.
+	 * @return object|null Popup object or null.
+	 */
+	protected static function deprecate_test_never( $popup, $published_only ) {
+		$frequency = $popup['options']['frequency'];
+		$placement = $popup['options']['placement'];
+		if ( in_array( $frequency, [ 'never', 'test' ] ) ) {
+			if ( in_array( $placement, [ 'inline', 'above_header' ] ) ) {
+				$popup['options']['frequency'] = 'always';
+			} else {
+				$popup['options']['frequency'] = 'daily';
+			}
+			update_post_meta( $popup['id'], 'frequency', $popup['options']['frequency'] );
+			$popup['status'] = 'draft';
+
+			$post = get_post( $popup['id'] );
+
+			$post->post_status = 'draft';
+			wp_update_post( $post );
+
+			if ( $published_only ) {
+				$popup = null;
+			}
+		}
+		return $popup;
+	}
+
+	/**
 	 * Create the popup object.
 	 *
-	 * @param WP_Post $campaign_post The campaign post object.
+	 * @param WP_Post $campaign_post The prompt post object.
 	 * @param boolean $include_categories If true, returned objects will include assigned categories.
 	 * @param object  $options Popup options to use instead of the options retrieved from the post. Used for popup previews.
 	 * @return object Popup object
@@ -415,10 +422,10 @@ final class Newspack_Popups_Model {
 					'display_title'           => false,
 					'dismiss_text'            => '',
 					'dismiss_text_alignment'  => 'center',
-					'frequency'               => 'test',
+					'frequency'               => 'always',
 					'overlay_color'           => '#000000',
 					'overlay_opacity'         => 30,
-					'placement'               => 'center',
+					'placement'               => 'inline',
 					'trigger_type'            => 'time',
 					'trigger_delay'           => 0,
 					'trigger_scroll_progress' => 0,
@@ -427,6 +434,11 @@ final class Newspack_Popups_Model {
 				]
 			),
 		];
+
+		$assigned_segments = explode( ',', $popup['options']['selected_segment_id'] );
+		if ( $popup['options']['selected_segment_id'] && 0 === count( array_intersect( $assigned_segments, Newspack_Popups_Segmentation::get_segment_ids() ) ) ) {
+			$popup['options']['selected_segment_id'] = null;
+		}
 		if ( $include_categories ) {
 			$popup['categories']      = get_the_category( $id );
 			$popup['campaign_groups'] = get_the_terms( $id, Newspack_Popups::NEWSPACK_POPUPS_TAXONOMY );
@@ -494,7 +506,7 @@ final class Newspack_Popups_Model {
 		if ( ! isset( $popup['options'], $popup['options']['placement'] ) ) {
 			return false;
 		}
-		return 'inline' === $popup['options']['placement'];
+		return in_array( $popup['options']['placement'], self::$inline_placements );
 	}
 
 	/**
@@ -537,6 +549,19 @@ final class Newspack_Popups_Model {
 	}
 
 	/**
+	 * Is it an above-header popup?
+	 *
+	 * @param object $popup The popup object.
+	 * @return boolean True if it is an above-header popup.
+	 */
+	public static function is_above_header( $popup ) {
+		if ( ! isset( $popup['options'], $popup['options']['placement'] ) ) {
+			return false;
+		}
+		return 'above_header' === $popup['options']['placement'];
+	}
+
+	/**
 	 * Does the popup have newsletter prompt?
 	 *
 	 * @param object $popup The popup object.
@@ -569,8 +594,7 @@ final class Newspack_Popups_Model {
 	 */
 	protected static function insert_event_tracking( $popup, $body, $element_id ) {
 		if (
-			Newspack_Popups::previewed_popup_id() ||
-			'test' === $popup['options']['frequency'] ||
+			Newspack_Popups::is_preview_request() ||
 			Newspack_Popups_Settings::is_non_interactive()
 		) {
 			return '';
@@ -642,7 +666,7 @@ final class Newspack_Popups_Model {
 	 * @param string $element_id The id of the popup element.
 	 */
 	protected static function get_analytics_events( $popup, $body, $element_id ) {
-		if ( Newspack_Popups::previewed_popup_id() ) {
+		if ( Newspack_Popups::is_preview_request() ) {
 			return [];
 		}
 
@@ -748,14 +772,23 @@ final class Newspack_Popups_Model {
 		if ( Newspack_Popups_Settings::is_non_interactive() ) {
 			return '';
 		}
-		if (
-			( 'test' === $popup['options']['frequency'] || Newspack_Popups::previewed_popup_id() ) &&
-			is_user_logged_in() &&
-			current_user_can( 'edit_others_pages' )
-		) {
+		if ( Newspack_Popups::previewed_popup_id() && Newspack_Popups::is_user_admin() ) {
 			return '';
 		}
 		return 'amp-access="popups.' . esc_attr( self::canonize_popup_id( $popup['id'] ) ) . '" amp-access-hide ';
+	}
+
+	/**
+	 * Get data-popup-status attribute for use in previews, if viewing as an admin.
+	 *
+	 * @param object $popup Popup.
+	 */
+	public static function get_data_status_preview_attrs( $popup ) {
+		if ( ! Newspack_Popups::is_user_admin() ) {
+			return '';
+		}
+		$status = 'future' === $popup['status'] ? __( 'scheduled', 'newspack-popups' ) : $popup['status'];
+		return 'data-popup-status="' . esc_attr( $status ) . '" ';
 	}
 
 	/**
@@ -782,7 +815,10 @@ final class Newspack_Popups_Model {
 		$dismiss_text           = self::get_dismiss_text( $popup );
 		$dismiss_text_alignment = self::get_dismiss_text_alignment( $popup );
 		$is_newsletter_prompt   = self::has_newsletter_prompt( $popup );
-		$classes                = array( 'newspack-inline-popup' );
+		$classes                = [];
+		$classes[]              = 'above_header' === $popup['options']['placement'] ? 'newspack-above-header-popup' : null;
+		$classes[]              = 'inline' === $popup['options']['placement'] ? 'newspack-inline-popup' : null;
+		$classes[]              = 'publish' !== $popup['status'] ? 'newspack-inactive-popup-status' : null;
 		$classes[]              = ( ! empty( $popup['title'] ) && $display_title ) ? 'newspack-lightbox-has-title' : null;
 		$classes[]              = $is_newsletter_prompt ? 'newspack-newsletter-prompt-inline' : null;
 
@@ -799,7 +835,15 @@ final class Newspack_Popups_Model {
 		ob_start();
 		?>
 			<?php self::insert_event_tracking( $popup, $body, $element_id ); ?>
-			<amp-layout <?php echo self::get_access_attrs( $popup ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>" role="button" tabindex="0" style="<?php echo esc_attr( self::container_style( $popup ) ); ?>" id="<?php echo esc_attr( $element_id ); ?>">
+			<amp-layout
+				<?php echo self::get_access_attrs( $popup ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<?php echo self::get_data_status_preview_attrs( $popup ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>"
+				role="button"
+				tabindex="0"
+				style="<?php echo esc_attr( self::container_style( $popup ) ); ?>"
+				id="<?php echo esc_attr( $element_id ); ?>"
+			>
 						<?php if ( ! empty( $popup['title'] ) && $display_title ) : ?>
 					<h1 class="newspack-popup-title"><?php echo esc_html( $popup['title'] ); ?></h1>
 				<?php endif; ?>
@@ -854,6 +898,8 @@ final class Newspack_Popups_Model {
 		$classes                = array( 'newspack-lightbox', 'newspack-lightbox-placement-' . $popup['options']['placement'] );
 		$classes[]              = ( ! empty( $popup['title'] ) && $display_title ) ? 'newspack-lightbox-has-title' : null;
 		$classes[]              = $is_newsletter_prompt ? 'newspack-newsletter-prompt-overlay' : null;
+		$wrapper_classes        = [ 'newspack-popup-wrapper' ];
+		$wrapper_classes[]      = 'publish' !== $popup['status'] ? 'newspack-inactive-popup-status' : null;
 		$is_scroll_triggered    = 'scroll' === $popup['options']['trigger_type'];
 
 		add_filter(
@@ -865,8 +911,15 @@ final class Newspack_Popups_Model {
 
 		ob_start();
 		?>
-		<amp-layout <?php echo self::get_access_attrs( $popup ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>" role="button" tabindex="0" id="<?php echo esc_attr( $element_id ); ?>">
-			<div class="newspack-popup-wrapper" style="<?php echo esc_attr( self::container_style( $popup ) ); ?>">
+		<amp-layout
+			<?php echo self::get_access_attrs( $popup ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			<?php echo self::get_data_status_preview_attrs( $popup ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>"
+			role="button"
+			tabindex="0"
+			id="<?php echo esc_attr( $element_id ); ?>"
+		>
+			<div class="<?php echo esc_attr( implode( ' ', $wrapper_classes ) ); ?>" data-popup-status="<?php echo esc_attr( $popup['status'] ); ?>" style="<?php echo esc_attr( self::container_style( $popup ) ); ?>">
 				<div class="newspack-popup">
 					<?php if ( ! empty( $popup['title'] ) && $display_title ) : ?>
 						<h1 class="newspack-popup-title"><?php echo esc_html( $popup['title'] ); ?></h1>

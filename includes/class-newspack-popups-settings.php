@@ -73,12 +73,31 @@ class Newspack_Popups_Settings {
 	 * Return all settings.
 	 */
 	public static function get_settings() {
+		$donor_landing_options       = [];
+		$donor_landing_options_query = new \WP_Query(
+			[
+				'post_type'      => [ 'page' ],
+				'post_status'    => [ 'publish' ],
+				'post_parent'    => 0,
+				'posts_per_page' => 100,
+			]
+		);
+
+		if ( $donor_landing_options_query->have_posts() ) {
+			foreach ( $donor_landing_options_query->posts as $page ) {
+				$donor_landing_options[] = [
+					'label' => $page->post_title,
+					'value' => $page->ID,
+				];
+			}
+		}
+
 		return [
 			[
 				'key'   => 'suppress_newsletter_campaigns',
 				'value' => get_option( 'suppress_newsletter_campaigns', true ),
 				'label' => __(
-					'Suppress Newsletter campaigns if visitor is coming from email.',
+					'Suppress Newsletter prompts if visitor is coming from email.',
 					'newspack-popups'
 				),
 			],
@@ -86,7 +105,7 @@ class Newspack_Popups_Settings {
 				'key'   => 'suppress_all_newsletter_campaigns_if_one_dismissed',
 				'value' => get_option( 'suppress_all_newsletter_campaigns_if_one_dismissed', true ),
 				'label' => __(
-					'Suppress all Newsletter campaigns if at least one Newsletter campaign was permanently dismissed.',
+					'Suppress all Newsletter prompts if at least one Newsletter campaign was permanently dismissed.',
 					'newspack-popups'
 				),
 			],
@@ -94,32 +113,52 @@ class Newspack_Popups_Settings {
 				'key'   => 'suppress_donation_campaigns_if_donor',
 				'value' => get_option( 'suppress_donation_campaigns_if_donor', false ),
 				'label' => __(
-					'Suppress all donation campaigns if the reader has donated.',
+					'Suppress all donation prompts if the reader has donated.',
 					'newspack-popups'
 				),
 			],
 			[
-				'key'   => 'newspack_newsletters_non_interative_mode',
+				'key'   => 'newspack_popups_non_interative_mode',
 				'value' => self::is_non_interactive(),
 				'label' => __(
 					'Enable non-interactive mode.',
 					'newspack-popups'
 				),
 				'help'  => __(
-					'Use this setting in high traffic scenarios. No API requests will be made, reducing server load. Inline campaigns will be shown to all users without dismissal buttons, and overlay campaigns will be suppressed.',
+					'Use this setting in high traffic scenarios. No API requests will be made, reducing server load. Inline prompts will be shown to all users without dismissal buttons, and overlay prompts will be suppressed.',
 					'newspack-popups'
 				),
+			],
+			[
+				'key'            => 'newspack_popups_donor_landing_page',
+				'value'          => self::donor_landing_page(),
+				'label'          => __(
+					'Donor landing page',
+					'newspack-popups'
+				),
+				'help'           => __(
+					"Set a page on your site as a donation landing page. Once a reader views this page, they will be considered a donor. This is helpful if you're using an off-site donation platform but still want to target donors as an audience segment.",
+					'newspack-popups'
+				),
+				'type'           => 'select',
+				'options'        => $donor_landing_options,
+				'no_option_text' => __( '-- None --', 'newspack-popups' ),
 			],
 			[
 				'key'   => 'all_segments',
 				'value' => array_reduce(
 					Newspack_Popups_Segmentation::get_segments(),
 					function( $acc, $item ) {
-						$acc[ $item['id'] ] = $item['configuration'];
+						$acc[ $item['id'] ]             = $item['configuration'];
+						$acc[ $item['id'] ]['priority'] = $item['priority'];
 						return $acc;
 					},
 					[]
 				),
+			],
+			[
+				'key'   => Newspack_Popups::NEWSPACK_POPUPS_ACTIVE_CAMPAIGN_GROUP,
+				'value' => get_option( Newspack_Popups::NEWSPACK_POPUPS_ACTIVE_CAMPAIGN_GROUP ),
 			],
 		];
 	}
@@ -128,7 +167,15 @@ class Newspack_Popups_Settings {
 	 * Is the non-interactive setting on?
 	 */
 	public static function is_non_interactive() {
-		return get_option( 'newspack_newsletters_non_interative_mode', false );
+		// Handle legacy option name.
+		return get_option( 'newspack_newsletters_non_interative_mode', false ) || get_option( 'newspack_popups_non_interative_mode', false );
+	}
+
+	/**
+	 * Donor landing page.
+	 */
+	public static function donor_landing_page() {
+		return get_option( 'newspack_popups_donor_landing_page', '' );
 	}
 
 	/**
@@ -162,6 +209,79 @@ class Newspack_Popups_Settings {
 		);
 		\wp_style_add_data( 'newspack-popups-settings', 'rtl', 'replace' );
 		\wp_enqueue_style( 'newspack-popups-settings' );
+	}
+
+	/**
+	 * Activate prompts by campaign.
+	 *
+	 * @param int $ids Campaign IDs to publish.
+	 * @return bool Whether operation was successful.
+	 */
+	public static function batch_publish( $ids ) {
+		if ( empty( $ids ) ) {
+			return new \WP_Error(
+				'newspack_popups_settings_error',
+				esc_html__( 'Invalid campaign IDs.', 'newspack' )
+			);
+		}
+
+		$all_campaigns = new \WP_Query(
+			[
+				'post_type'      => Newspack_Popups::NEWSPACK_POPUPS_CPT,
+				'post_status'    => [ 'draft', 'pending', 'future', 'publish' ],
+				'posts_per_page' => 100,
+			]
+		);
+
+		if ( $all_campaigns->have_posts() ) {
+			foreach ( $all_campaigns->posts as $campaign ) {
+				if ( in_array( $campaign->ID, $ids ) ) {
+					if ( 'publish' !== $campaign->post_status ) {
+						wp_publish_post( $campaign );
+					}
+				} else {
+					if ( 'publish' === $campaign->post_status ) {
+						$campaign->post_status = 'draft';
+						wp_update_post( $campaign );
+					}
+				}
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Unpublish prompts by campaign.
+	 *
+	 * @param int $ids Campaign IDs to unpublish.
+	 * @return bool Whether operation was successful.
+	 */
+	public static function batch_unpublish( $ids ) {
+		if ( empty( $ids ) ) {
+			return new \WP_Error(
+				'newspack_popups_settings_error',
+				esc_html__( 'Invalid campaign IDs.', 'newspack' )
+			);
+		}
+
+		$campaigns_to_unpublish = new \WP_Query(
+			[
+				'post_type'      => Newspack_Popups::NEWSPACK_POPUPS_CPT,
+				'post_status'    => [ 'publish' ],
+				'post__in'       => $ids,
+				'posts_per_page' => 100,
+			]
+		);
+
+		if ( $campaigns_to_unpublish->have_posts() ) {
+			foreach ( $campaigns_to_unpublish->posts as $campaign ) {
+				$campaign->post_status = 'draft';
+				wp_update_post( $campaign );
+			}
+		}
+
+		return true;
 	}
 }
 

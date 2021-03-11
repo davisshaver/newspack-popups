@@ -45,6 +45,9 @@ class Segmentation_Client_Data extends Lightweight_API {
 		// Add a donation to client.
 		$donation = $this->get_request_param( 'donation', $request );
 		if ( $donation ) {
+			if ( 'string' === $donation ) {
+				$donation = json_decode( $donation );
+			}
 			$client_data_update['donations'][] = $donation;
 		}
 
@@ -52,6 +55,17 @@ class Segmentation_Client_Data extends Lightweight_API {
 		$email_subscription = $this->get_request_param( 'email_subscription', $request );
 		if ( $email_subscription ) {
 			$client_data_update['email_subscriptions'][] = $email_subscription;
+		}
+
+		// Get user ID if they are logged in.
+		$user_id = $this->get_request_param( 'user_id', $request );
+		if ( $user_id ) {
+			$client_data_update['user_id'] = $user_id;
+		}
+		// Add donations data from WC orders.
+		$orders = $this->get_request_param( 'orders', $request );
+		if ( $orders ) {
+			$client_data_update['donations'] = json_decode( $orders );
 		}
 
 		// Fetch Mailchimp data.

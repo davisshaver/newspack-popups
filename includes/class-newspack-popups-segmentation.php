@@ -56,14 +56,15 @@ final class Newspack_Popups_Segmentation {
 		add_action( 'wp_footer', [ __CLASS__, 'insert_amp_analytics' ], 20 );
 
 		add_filter( 'newspack_custom_dimensions', [ __CLASS__, 'register_custom_dimensions' ] );
-
-		// Sending pageviews with segmentation-related custom dimensions.
-		// 1. Disable pageview sending from Site Kit's GTAG implementation. The custom events sent using Site Kit's
-		// GTAG will not contain the segmentation-related custom dimensions.
-		add_filter( 'googlesitekit_gtag_opt', [ __CLASS__, 'remove_pageview_reporting' ] );
-		add_filter( 'googlesitekit_amp_gtag_opt', [ __CLASS__, 'remove_pageview_reporting_amp' ] );
-		// 2. Add an amp-analytics tag which will send the PV with custom dimensions attached.
-		add_action( 'wp_footer', [ __CLASS__, 'insert_gtag_amp_analytics' ] );
+		if ( ! Newspack_Popups_Settings::is_non_interactive() && ( ! defined( 'NEWSPACK_POPUPS_DISABLE_REPORTING_CUSTOM_DIMENSIONS' ) || true !== NEWSPACK_POPUPS_DISABLE_REPORTING_CUSTOM_DIMENSIONS ) ) {
+			// Sending pageviews with segmentation-related custom dimensions.
+			// 1. Disable pageview sending from Site Kit's GTAG implementation. The custom events sent using Site Kit's
+			// GTAG will not contain the segmentation-related custom dimensions.
+			add_filter( 'googlesitekit_gtag_opt', [ __CLASS__, 'remove_pageview_reporting' ] );
+			add_filter( 'googlesitekit_amp_gtag_opt', [ __CLASS__, 'remove_pageview_reporting_amp' ] );
+			// 2. Add an amp-analytics tag which will send the PV with custom dimensions attached.
+			add_action( 'wp_footer', [ __CLASS__, 'insert_gtag_amp_analytics' ] );
+		}
 
 		add_action( 'newspack_popups_segmentation_data_prune', [ __CLASS__, 'prune_data' ] );
 		if ( ! wp_next_scheduled( 'newspack_popups_segmentation_data_prune' ) ) {
@@ -159,7 +160,7 @@ final class Newspack_Popups_Segmentation {
 				'custom_dimensions'                 => wp_json_encode( $custom_dimensions ),
 				'custom_dimensions_existing_values' => wp_json_encode( $custom_dimensions_existing_values ),
 			],
-			plugins_url( '../api/segmentation/index.php', __FILE__ )
+			self::get_client_data_endpoint()
 		);
 
 		?>
@@ -228,18 +229,60 @@ final class Newspack_Popups_Segmentation {
 			],
 		];
 
+		$initial_client_report_url_params = [];
+
 		// Handle Mailchimp URL parameters.
 		if ( isset( $_GET['mc_cid'], $_GET['mc_eid'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$endpoint                         = self::get_client_data_endpoint();
-			$amp_analytics_config['requests'] = [
-				'event' => esc_url( $endpoint ),
+			$initial_client_report_url_params['mc_cid'] = sanitize_text_field( $_GET['mc_cid'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$initial_client_report_url_params['mc_eid'] = sanitize_text_field( $_GET['mc_eid'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
+		if ( is_user_logged_in() && ! Newspack_Popups::is_preview_request() ) {
+			if ( function_exists( 'wc_get_orders' ) ) {
+				$user_orders = wc_get_orders( [ 'customer_id' => get_current_user_id() ] );
+				if ( count( $user_orders ) ) {
+					$orders = [];
+					foreach ( $user_orders as $order ) {
+						$order_data = $order->get_data();
+						$orders[]   = [
+							'order_id' => $order_data['id'],
+							'date'     => date_format( date_create( $order_data['date_created'] ), 'Y-m-d' ),
+							'amount'   => $order_data['total'],
+						];
+					}
+					$initial_client_report_url_params['orders'] = wp_json_encode( $orders );
+				}
+			}
+
+			$initial_client_report_url_params['user_id'] = get_current_user_id();
+		}
+
+		if ( ! empty( $initial_client_report_url_params ) ) {
+			$amp_analytics_config['requests']                            = [
+				'initialClientDataReport' => esc_url( self::get_client_data_endpoint() ),
 			];
-			$amp_analytics_config['triggers']['trackMailchimpData'] = [
+			$amp_analytics_config['triggers']['initialClientDataReport'] = [
+				'on'             => 'ini-load',
+				'request'        => 'initialClientDataReport',
+				'extraUrlParams' => array_merge(
+					$initial_client_report_url_params,
+					[
+						'client_id' => 'CLIENT_ID(' . esc_attr( self::NEWSPACK_SEGMENTATION_CID_NAME ) . ')',
+					]
+				),
+			];
+		}
+
+		$donor_landing_page = Newspack_Popups_Settings::donor_landing_page();
+		if ( $donor_landing_page && intval( $donor_landing_page ) === get_queried_object_id() ) {
+			$amp_analytics_config['triggers']['reportDonor'] = [
 				'on'             => 'ini-load',
 				'request'        => 'event',
 				'extraUrlParams' => [
-					'mc_cid'    => sanitize_text_field( $_GET['mc_cid'] ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-					'mc_eid'    => sanitize_text_field( $_GET['mc_eid'] ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+					'donation'  => wp_json_encode(
+						[
+							'offsite_has_donated' => true,
+						]
+					),
 					'client_id' => 'CLIENT_ID(' . esc_attr( self::NEWSPACK_SEGMENTATION_CID_NAME ) . ')',
 				],
 			];
@@ -290,9 +333,59 @@ final class Newspack_Popups_Segmentation {
 
 	/**
 	 * Get all configured segments.
+	 *
+	 * @return array Array of segments.
 	 */
 	public static function get_segments() {
-		return get_option( self::SEGMENTS_OPTION_NAME, [] );
+		$segments                  = get_option( self::SEGMENTS_OPTION_NAME, [] );
+		$segments_without_priority = array_filter(
+			$segments,
+			function( $segment ) {
+				return ! isset( $segment['priority'] );
+			}
+		);
+
+		// Failsafe to ensure that all segments have an assigned priority.
+		if ( 0 < count( $segments_without_priority ) ) {
+			$segments = self::reindex_segments( $segments );
+		}
+
+		return $segments;
+	}
+
+	/**
+	 * Get a single segment by ID.
+	 *
+	 * @param string $id A segment id.
+	 * @return object|null The single segment object with matching ID, or null.
+	 */
+	public static function get_segment( $id ) {
+		$matching_segments = array_values(
+			array_filter(
+				self::get_segments(),
+				function( $segment ) use ( $id ) {
+					return $segment['id'] === $id;
+				}
+			)
+		);
+
+		if ( 0 < count( $matching_segments ) ) {
+			return $matching_segments[0];
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get segment IDs.
+	 */
+	public static function get_segment_ids() {
+		return array_map(
+			function( $segment ) {
+				return $segment['id'];
+			},
+			self::get_segments()
+		);
 	}
 
 	/**
@@ -404,7 +497,7 @@ final class Newspack_Popups_Segmentation {
 		$client_in_segment = array_filter(
 			$all_client_data,
 			function ( $client_data ) use ( $segment_config ) {
-				return Campaign_Data_Utils::should_display_campaign(
+				return Campaign_Data_Utils::does_client_match_segment(
 					$segment_config,
 					$client_data
 				);
@@ -415,6 +508,80 @@ final class Newspack_Popups_Segmentation {
 			'total'      => count( $all_client_data ),
 			'in_segment' => count( $client_in_segment ),
 		];
+	}
+
+	/**
+	 * Sort all segments by relative priority.
+	 *
+	 * @param array $segment_ids Array of segment IDs, in order of desired priority.
+	 * @return array Array of sorted segments.
+	 */
+	public static function sort_segments( $segment_ids ) {
+		$segments = get_option( self::SEGMENTS_OPTION_NAME, [] );
+		$is_valid = self::validate_segment_ids( $segment_ids, $segments );
+
+		if ( ! $is_valid ) {
+			return new WP_Error(
+				'invalid_segment_sort',
+				__( 'Failed to sort due to outdated segment data. Please refresh and try again.', 'newspack-popups' )
+			);
+		}
+
+		$sorted_segments = array_map(
+			function( $segment_id ) use ( $segments ) {
+				$segment = array_filter(
+					$segments,
+					function( $segment ) use ( $segment_id ) {
+						return $segment['id'] === $segment_id;
+					}
+				);
+
+				return reset( $segment );
+			},
+			$segment_ids
+		);
+
+		$sorted_segments = self::reindex_segments( $sorted_segments );
+		update_option( self::SEGMENTS_OPTION_NAME, $sorted_segments );
+		return self::get_segments();
+	}
+
+	/**
+	 * Validate an array of segment IDs against the existing segment IDs in the options table.
+	 * When re-sorting segments, the IDs passed should all exist, albeit in a different order,
+	 * so if there are any differences, validation will fail.
+	 *
+	 * @param array $segment_ids Array of segment IDs to validate.
+	 * @param array $segments    Array of existing segments to validate against.
+	 * @return boolean Whether $segment_ids is valid.
+	 */
+	public static function validate_segment_ids( $segment_ids, $segments ) {
+		$existing_ids = array_map(
+			function( $segment ) {
+				return $segment['id'];
+			},
+			$segments
+		);
+
+		return array_diff( $segment_ids, $existing_ids ) === array_diff( $existing_ids, $segment_ids );
+	}
+
+	/**
+	 * Reindex segment priorities based on current position in array.
+	 *
+	 * @param object $segments Array of segments.
+	 */
+	public static function reindex_segments( $segments ) {
+		$index = 0;
+
+		return array_map(
+			function( $segment ) use ( &$index ) {
+				$segment['priority'] = $index;
+				$index++;
+				return $segment;
+			},
+			$segments
+		);
 	}
 
 	/**
