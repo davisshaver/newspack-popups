@@ -18,22 +18,8 @@ if ( file_exists( $legacy_config_path ) ) {
 	die( 'missing config file' );
 }
 
-if ( file_exists( $wp_root_path . '__wp__' ) ) {
-	define( 'ABSPATH', $wp_root_path . '__wp__/' );
-} else {
-	define( 'ABSPATH', $wp_root_path );
-}
-
-if ( ! defined( 'WPINC' ) ) {
-	define( 'WPINC', 'wp-includes/' );
-}
-
 if ( ! defined( 'WP_CONTENT_DIR' ) ) {
 	define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content/' );
-}
-
-if ( ! defined( 'WP_DEBUG' ) ) {
-	define( 'WP_DEBUG', false );
 }
 
 // phpcs:disable
