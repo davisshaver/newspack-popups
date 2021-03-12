@@ -43,6 +43,10 @@ if ( file_exists( ABSPATH . WPINC . 'wp-db.php' ) ) {
 	die( "{ error: 'no_wordpress' }" );
 }
 
+if ( ! defined( 'WP_TEMP_DIR' ) ) {
+	define( 'WP_TEMP_DIR', WP_CONTENT_DIR . '/temp/' );
+}
+
 if ( file_exists( WP_CONTENT_DIR . '/object-cache.php' ) ) {
 	require WP_CONTENT_DIR . '/object-cache.php';
 } else {
