@@ -1,3 +1,5 @@
+import { __, sprintf, _n } from '@wordpress/i18n';
+
 /**
  * Data selector for popup options (stored in post meta)
  *
@@ -9,39 +11,52 @@ export const optionsFieldsSelector = select => {
 	const {
 		background_color,
 		frequency,
-		dismiss_text,
-		dismiss_text_alignment,
 		display_title,
+		hide_border,
 		overlay_color,
 		overlay_opacity,
+		overlay_size,
+		no_overlay_background,
 		placement,
-		trigger_scroll_progress,
-		trigger_delay,
 		trigger_type,
+		trigger_delay,
+		trigger_scroll_progress,
+		trigger_blocks_count,
+		archive_insertion_posts_count,
+		archive_insertion_is_repeating,
 		utm_suppression,
 		selected_segment_id,
+		post_types,
+		archive_page_types,
+		excluded_categories,
+		excluded_tags,
 	} = meta || {};
 
-	const isInlinePlacement = placementValue =>
-		[ 'inline', 'above_header' ].indexOf( placementValue ) >= 0;
-	const isOverlay = ! isInlinePlacement( placement );
+	const isOverlay = isOverlayPlacement( placement );
 
 	return {
 		background_color,
-		dismiss_text,
-		dismiss_text_alignment,
 		display_title,
+		hide_border,
 		frequency,
 		overlay_color,
 		overlay_opacity,
+		overlay_size,
+		no_overlay_background,
 		placement,
-		trigger_scroll_progress,
-		trigger_delay,
 		trigger_type,
+		trigger_delay,
+		trigger_scroll_progress,
+		trigger_blocks_count,
+		archive_insertion_posts_count,
+		archive_insertion_is_repeating,
 		utm_suppression,
 		selected_segment_id,
-		isInlinePlacement,
 		isOverlay,
+		post_types,
+		archive_page_types,
+		excluded_categories,
+		excluded_tags,
 	};
 };
 
@@ -102,5 +117,162 @@ export const updateEditorColors = backgroundColor => {
 			'--newspack-popups-editor-placeholder-color',
 			`${ foregroundColor }80`
 		);
+	}
+};
+
+/**
+ * Is the given placement value an overlay placement?
+ *
+ * @param {string} placementValue Placement of the prompt.
+ * @return {boolean} Whether or not the prompt has an overlay placement.
+ */
+export const isOverlayPlacement = placementValue => {
+	const overlayPlacements = window.newspack_popups_data?.overlay_placements || [];
+	return -1 < overlayPlacements.indexOf( placementValue );
+};
+
+/**
+ * Is the placement inline?
+ * Not including Custom Placement or Manual-Only prompts.
+ *
+ * @param {string} placementValue Placement value of the prompt.
+ * @return {boolean} True if placementValue is an inline placement.
+ */
+export const isInlinePlacement = placementValue =>
+	-1 < [ 'inline', 'above_header', 'archives' ].indexOf( placementValue );
+
+/**
+ * Is the given placement value a custom placement?
+ *
+ * @param {string} placementValue Placement of the prompt.
+ * @return {boolean} Whether or not the prompt has a custom placement.
+ */
+export const isCustomPlacement = placementValue => {
+	const customPlacements = window.newspack_popups_data?.custom_placements || {};
+	return -1 < Object.keys( customPlacements ).indexOf( placementValue );
+};
+
+/**
+ * Is the given placement value a manual-only placement?
+ *
+ * @param {string} placementValue Placement of the prompt.
+ * @return {boolean} Whether or not the prompt is manual-only.
+ */
+export const isManualOnlyPlacement = placementValue => 'manual' === placementValue;
+
+/**
+ * Given a placement value, construct a context-sensitive help message to display in the editor sidebar.
+ *
+ * @return {string} An appropriate help message.
+ */
+export const getPlacementHelpMessage = props => {
+	if ( isCustomPlacement( props.placement ) ) {
+		const customPlacements = window.newspack_popups_data?.custom_placements || {};
+		return sprintf(
+			// Translators: Custom placement name.
+			__(
+				'The prompt will appear where %s is inserted using the Custom Placement block.',
+				'newspack-popups'
+			),
+			customPlacements[ props.placement ] || __( 'this custom placement', 'newspack-popups' )
+		);
+	}
+
+	switch ( props.placement ) {
+		case 'center':
+			return __(
+				'The prompt will be displayed as an overlay at the center of the viewport.',
+				'newspack-popups'
+			);
+		case 'center_left':
+			return __(
+				'The prompt will be displayed as an overlay at the center left of the viewport.',
+				'newspack-popups'
+			);
+		case 'center_right':
+			return __(
+				'The prompt will be displayed as an overlay at the center right of the viewport.',
+				'newspack-popups'
+			);
+		case 'top':
+			return __(
+				'The prompt will be displayed as an overlay at the top of the viewport.',
+				'newspack-popups'
+			);
+		case 'top_left':
+			return __(
+				'The prompt will be displayed as an overlay at the top left of the viewport.',
+				'newspack-popups'
+			);
+		case 'top_right':
+			return __(
+				'The prompt will be displayed as an overlay at the top right of the viewport.',
+				'newspack-popups'
+			);
+		case 'bottom':
+			return __(
+				'The prompt will be displayed as an overlay at the bottom of the viewport.',
+				'newspack-popups'
+			);
+		case 'bottom_left':
+			return __(
+				'The prompt will be displayed as an overlay at the bottom left of the viewport.',
+				'newspack-popups'
+			);
+		case 'bottom_right':
+			return __(
+				'The prompt will be displayed as an overlay at the bottom right of the viewport.',
+				'newspack-popups'
+			);
+		case 'above_header':
+			return __(
+				'The prompt will be automatically inserted at the very top of the page, above the header.',
+				'newspack-popups'
+			);
+		case 'inline':
+			return props.trigger_type === 'blocks_count'
+				? sprintf(
+						// Translators: Blocks count until insertion.
+						_n(
+							'The prompt will be automatically inserted after %s block of content.',
+							'The prompt will be automatically inserted after %s blocks of content.',
+							props.trigger_blocks_count,
+							'newspack-popups'
+						),
+						props.trigger_blocks_count
+				  )
+				: sprintf(
+						// Translators: Article percentage count until insertion.
+						__(
+							'The prompt will be automatically inserted about %s into article content.',
+							'newspack-popups'
+						),
+						props.trigger_scroll_progress + '%'
+				  );
+		case 'archives':
+			return props.archive_insertion_is_repeating
+				? sprintf(
+						// Translators: Insertion period.
+						__(
+							'The prompt will be automatically inserted every %d articles in the archive pages.',
+							'newspack-popups'
+						),
+						props.archive_insertion_posts_count
+				  )
+				: sprintf(
+						// Translators: Insertion period articles count.
+						__(
+							'The prompt will be automatically inserted after %d articles in the archive pages.',
+							'newspack-popups'
+						),
+						props.archive_insertion_posts_count
+				  );
+		case 'manual':
+			return __(
+				'The prompt will appear only where inserted using the Single Prompt block or a shortcode.',
+				'newspack-popups'
+			);
+		default:
+			return __( 'The placement where the prompt can appear.', 'newspack-popups' );
 	}
 };

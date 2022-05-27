@@ -18,10 +18,12 @@ import { optionsFieldsSelector } from './utils';
 import Sidebar from './Sidebar';
 import FrequencySidebar from './FrequencySidebar';
 import SegmentationSidebar from './SegmentationSidebar';
-import DismissSidebar from './DismissSidebar';
 import ColorsSidebar from './ColorsSidebar';
+import AdvancedSidebar from './AdvancedSidebar';
 import Preview from './Preview';
+import Duplicate from './Duplicate';
 import EditorAdditions from './EditorAdditions';
+import PostTypesPanel from './PostTypesPanel';
 import './style.scss';
 
 // Action dispatchers for the sidebar components.
@@ -45,8 +47,9 @@ const connectData = compose( [
 const SidebarWithData = connectData( Sidebar );
 const FrequencySidebarWithData = connectData( FrequencySidebar );
 const SegmentationSidebarWithData = connectData( SegmentationSidebar );
-const DismissSidebarWithData = connectData( DismissSidebar );
 const ColorsSidebarWithData = connectData( ColorsSidebar );
+const PostTypesPanelWithData = connectData( PostTypesPanel );
+const AdvancedSidebarWithData = connectData( AdvancedSidebar );
 
 // Register components.
 registerPlugin( 'newspack-popups', {
@@ -85,18 +88,6 @@ registerPlugin( 'newspack-popups-segmentation', {
 	icon: null,
 } );
 
-registerPlugin( 'newspack-popups-dismiss', {
-	render: () => (
-		<PluginDocumentSettingPanel
-			name="popup-dismiss-panel"
-			title={ __( 'Dismiss Button Settings', 'newspack-popups' ) }
-		>
-			<DismissSidebarWithData />
-		</PluginDocumentSettingPanel>
-	),
-	icon: null,
-} );
-
 registerPlugin( 'newspack-popups-colors', {
 	render: () => (
 		<PluginDocumentSettingPanel
@@ -109,6 +100,30 @@ registerPlugin( 'newspack-popups-colors', {
 	icon: null,
 } );
 
+registerPlugin( 'newspack-popups-post-types', {
+	render: () => (
+		<PluginDocumentSettingPanel
+			name="post-types-panel"
+			title={ __( 'Post Types', 'newspack-popups' ) }
+		>
+			<PostTypesPanelWithData />
+		</PluginDocumentSettingPanel>
+	),
+	icon: null,
+} );
+
+registerPlugin( 'newspack-popups-advanced', {
+	render: () => (
+		<PluginDocumentSettingPanel
+			name="popup-advanced-panel"
+			title={ __( 'Advanced Settings', 'newspack-popups' ) }
+		>
+			<AdvancedSidebarWithData />
+		</PluginDocumentSettingPanel>
+	),
+	icon: null,
+} );
+
 registerPlugin( 'newspack-popups-editor', {
 	render: EditorAdditions,
 	icon: null,
@@ -116,8 +131,9 @@ registerPlugin( 'newspack-popups-editor', {
 
 // Add a button in post status section
 const PluginPostStatusInfoTest = () => (
-	<PluginPostStatusInfo>
+	<PluginPostStatusInfo className="newspack-popups__status-options">
 		<Preview />
+		<Duplicate />
 	</PluginPostStatusInfo>
 );
 registerPlugin( 'newspack-popups-preview', { render: PluginPostStatusInfoTest } );

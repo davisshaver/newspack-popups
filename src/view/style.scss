@@ -1,10 +1,17 @@
-// Secondary Color based on Newspack Theme
-$color__secondary: #555;
+// Secondary Color
+$color__secondary: #757575;
 $color__secondary-variation: darken( $color__secondary, 10% );
 
 // System Font
 $font__system: -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, oxygen, ubuntu, cantarell,
 	'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+
+// Sizes
+$overlay__gap: 16px;
+$size__x-small: 380px;
+$size__small: 544px;
+$size__medium: 784px;
+$size__large: 1264px;
 
 .newspack-lightbox {
 	align-items: center;
@@ -62,16 +69,11 @@ $font__system: -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, oxygen, ub
 	.newspack-popup {
 		background: transparent;
 		margin: 0 auto;
-		max-width: 780px;
-		padding: 1.5em;
+		max-width: $size__medium;
+		padding: 32px;
 
 		> *:first-child {
 			margin-top: 0;
-		}
-
-		> *:nth-last-child( 3 ) {
-			// Last 2 child being .popup-dismiss-form and .popup-not-interested-form
-			margin-bottom: 0;
 		}
 
 		.wp-block-column {
@@ -121,16 +123,16 @@ $font__system: -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, oxygen, ub
 	}
 
 	/* Placements */
-	&.newspack-lightbox-placement-center {
+	&.newspack-lightbox-placement-center,
+	&.newspack-lightbox-placement-bottom_left,
+	&.newspack-lightbox-placement-bottom_right,
+	&.newspack-lightbox-placement-center_left,
+	&.newspack-lightbox-placement-center_right,
+	&.newspack-lightbox-placement-top_left,
+	&.newspack-lightbox-placement-top_right {
 		.newspack-popup-wrapper {
-			max-height: 90%;
-			max-height: calc( 100% - 1.5em );
-			min-width: 100%;
+			max-height: calc( 100% - #{$overlay__gap} );
 			overflow-y: auto;
-
-			@media only screen and ( min-width: 780px ) {
-				min-width: 780px;
-			}
 		}
 	}
 
@@ -139,14 +141,69 @@ $font__system: -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, oxygen, ub
 		.newspack-popup-wrapper {
 			max-height: 100%;
 			overflow-y: auto;
+		}
+	}
+
+	/* Sizing */
+	&.newspack-lightbox-size-x-small,
+	&.newspack-lightbox-size-small,
+	&.newspack-lightbox-size-medium,
+	&.newspack-lightbox-size-large,
+	&.newspack-lightbox-size-full-width {
+		.newspack-popup-wrapper {
+			min-width: calc( 100% - #{$overlay__gap} );
+			width: calc( 100% - #{$overlay__gap} );
+		}
+
+		.newspack-popup {
+			max-width: 100%;
+		}
+	}
+
+	&.newspack-lightbox-size-x-small {
+		.newspack-popup-wrapper {
+			@media only screen and ( min-width: #{$size__x-small + $overlay__gap} ) {
+				min-width: $size__x-small;
+				width: $size__x-small;
+			}
+		}
+	}
+
+	&.newspack-lightbox-size-small {
+		.newspack-popup-wrapper {
+			@media only screen and ( min-width: #{$size__small + $overlay__gap} ) {
+				min-width: $size__small;
+				width: $size__small;
+			}
+		}
+	}
+
+	&.newspack-lightbox-size-medium {
+		.newspack-popup-wrapper {
+			@media only screen and ( min-width: #{$size__medium + $overlay__gap} ) {
+				min-width: $size__medium;
+				width: $size__medium;
+			}
+		}
+	}
+
+	&.newspack-lightbox-size-large {
+		.newspack-popup-wrapper {
+			@media only screen and ( min-width: #{$size__large + $overlay__gap} ) {
+				min-width: $size__large;
+				width: $size__large;
+			}
+		}
+	}
+
+	&.newspack-lightbox-size-full-width {
+		.newspack-popup-wrapper {
+			min-width: 100%;
 			width: 100%;
 		}
 
 		.newspack-popup {
-			max-width: 90%;
-			padding-left: 0;
-			padding-right: 0;
-			width: 1200px;
+			max-width: $size__large;
 		}
 	}
 
@@ -156,6 +213,43 @@ $font__system: -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, oxygen, ub
 
 	&.newspack-lightbox-placement-top {
 		align-items: flex-start;
+	}
+
+	&.newspack-lightbox-placement-bottom_right {
+		align-items: flex-end;
+		justify-content: flex-end;
+	}
+
+	&.newspack-lightbox-placement-bottom_left {
+		align-items: flex-end;
+		justify-content: flex-start;
+	}
+
+	&.newspack-lightbox-placement-top_right {
+		align-items: flex-start;
+		justify-content: flex-end;
+	}
+
+	&.newspack-lightbox-placement-top_left {
+		align-items: flex-start;
+		justify-content: flex-start;
+	}
+
+	&.newspack-lightbox-placement-center_right {
+		justify-content: flex-end;
+	}
+
+	&.newspack-lightbox-placement-center_left {
+		justify-content: flex-start;
+	}
+
+	/* Background */
+	&.newspack-lightbox-no-overlay {
+		pointer-events: none;
+
+		.newspack-popup-wrapper {
+			pointer-events: all;
+		}
 	}
 }
 
@@ -209,6 +303,11 @@ $font__system: -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, oxygen, ub
 	&:focus {
 		outline: none;
 	}
+
+	&.newspack-lightbox-no-border {
+		border: none;
+		padding: 0;
+	}
 }
 
 .newspack-inactive-popup-status {
@@ -239,48 +338,13 @@ $font__system: -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, oxygen, ub
 	}
 }
 
-.newspack-lightbox,
-.newspack-inline-popup,
-.newspack-above-header-popup {
-	.popup-not-interested-form {
-		display: flex;
-		justify-content: center;
-		margin-top: 1.5em;
-
-		&.align-left {
-			justify-content: flex-start;
-		}
-
-		&.align-right {
-			justify-content: flex-end;
-		}
-
-		button {
-			background: transparent;
-			border: 0;
-			border-radius: 0;
-			color: $color__secondary;
-			font-size: 0.7em;
-			font-weight: normal;
-			line-height: 1;
-			margin: 0;
-			padding: 0;
-			text-decoration: underline;
-
-			&:active,
-			&:focus,
-			&:hover {
-				color: $color__secondary-variation;
-				outline-offset: 2px;
-				text-decoration: none;
-			}
-		}
-	}
-}
-
 // This is needed for the scroll-triggered popups to function properly.
 // (#page-position-marker element is an absolutely-placed child of .entry-content)
 /* stylelint-disable-next-line no-duplicate-selectors */
 .entry-content {
 	position: relative !important;
+}
+
+.hide {
+	display: none;
 }

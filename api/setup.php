@@ -9,13 +9,15 @@
 $wp_root_path = substr( $_SERVER['SCRIPT_FILENAME'], 0, strrpos( $_SERVER['SCRIPT_FILENAME'], 'wp-content/plugins/' ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.InputNotValidated
 
 $legacy_config_path = $wp_root_path . 'newspack-popups-config.php';
-$config_path        = $wp_root_path . 'wp-content/newspack-popups-config.php';
+$config_path        = rtrim( WP_CONTENT_DIR, '/' ) . '/newspack-popups-config.php';
 if ( file_exists( $legacy_config_path ) ) {
 	require_once $legacy_config_path;
 } elseif ( file_exists( $config_path ) ) {
 	require_once $config_path;
 } else {
-	die( 'missing config file' );
+	header( 'HTTP/1.0 503 Service Unavailable' );
+	header( 'Content-Type: application/json' );
+	die( "{ error: 'missing_config_file' }" );
 }
 
 if ( ! defined( 'WP_CONTENT_DIR' ) ) {
@@ -40,6 +42,8 @@ if ( file_exists( ABSPATH . WPINC . 'wp-db.php' ) ) {
 	require_once ABSPATH . WPINC . 'wp-db.php';
 	require_once ABSPATH . WPINC . 'functions.php';
 } else {
+	header( 'HTTP/1.0 503 Service Unavailable' );
+	header( 'Content-Type: application/json' );
 	die( "{ error: 'no_wordpress' }" );
 }
 
@@ -54,11 +58,12 @@ if ( file_exists( WP_CONTENT_DIR . '/object-cache.php' ) ) {
 }
 
 global $wpdb;
-$wpdb = new wpdb( DB_USER, DB_PASSWORD, DB_NAME, DB_HOST );
-$wpdb->set_prefix( DB_PREFIX );
+$db_prefix = defined( 'DB_PREFIX' ) ? DB_PREFIX : 'wp_';
+$wpdb      = new wpdb( DB_USER, DB_PASSWORD, DB_NAME, DB_HOST );
+$wpdb->set_prefix( $db_prefix );
 
 global $table_prefix;
-$table_prefix = DB_PREFIX;
+$table_prefix = $db_prefix;
 
 wp_cache_init();
 

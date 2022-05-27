@@ -29,19 +29,27 @@ class ModelTest extends WP_UnitTestCase {
 		self::assertEquals(
 			$popup_object_default['options'],
 			[
-				'background_color'        => '#FFFFFF',
-				'display_title'           => false,
-				'dismiss_text'            => '',
-				'dismiss_text_alignment'  => 'center',
-				'frequency'               => 'always',
-				'overlay_color'           => '#000000',
-				'overlay_opacity'         => '30',
-				'placement'               => 'inline',
-				'trigger_type'            => 'scroll',
-				'trigger_delay'           => '3',
-				'trigger_scroll_progress' => '30',
-				'utm_suppression'         => null,
-				'selected_segment_id'     => '',
+				'background_color'               => '#FFFFFF',
+				'display_title'                  => false,
+				'hide_border'                    => false,
+				'frequency'                      => 'always',
+				'overlay_color'                  => '#000000',
+				'overlay_opacity'                => '30',
+				'overlay_size'                   => 'medium',
+				'no_overlay_background'          => true,
+				'placement'                      => 'inline',
+				'trigger_type'                   => 'scroll',
+				'trigger_delay'                  => '3',
+				'trigger_scroll_progress'        => '30',
+				'trigger_blocks_count'           => 0,
+				'archive_insertion_posts_count'  => 1,
+				'archive_insertion_is_repeating' => false,
+				'utm_suppression'                => null,
+				'selected_segment_id'            => '',
+				'post_types'                     => [ 'post', 'page' ],
+				'archive_page_types'             => [ 'category', 'tag', 'author', 'date', 'post-type', 'taxonomy' ],
+				'excluded_categories'            => [],
+				'excluded_tags'                  => [],
 			],
 			'Default options are as expected.'
 		);
@@ -57,6 +65,20 @@ class ModelTest extends WP_UnitTestCase {
 		self::assertEquals(
 			$popup_object['options']['trigger_scroll_progress'],
 			'42',
+			'Sets options when passed as argument.'
+		);
+
+		$popup_object_blocks_count_basis = Newspack_Popups_Model::create_popup_object(
+			get_post( self::$popup_id ),
+			false,
+			[
+				'trigger_type'         => 'blocks_count',
+				'trigger_blocks_count' => '5',
+			]
+		);
+		self::assertEquals(
+			$popup_object_blocks_count_basis['options']['trigger_blocks_count'],
+			'5',
 			'Sets options when passed as argument.'
 		);
 	}

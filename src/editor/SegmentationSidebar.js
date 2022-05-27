@@ -20,13 +20,13 @@ const segmentsList =
 const SegmentationSidebar = ( { onMetaFieldChange, selected_segment_id } ) => {
 	const [ assignedSegments, setAssignedSegments ] = useState( [] );
 
-	useEffect(() => {
+	useEffect( () => {
 		if ( selected_segment_id ) {
 			setAssignedSegments( selected_segment_id.split( ',' ) );
 		} else {
 			setAssignedSegments( [] );
 		}
-	}, [ selected_segment_id ]);
+	}, [ selected_segment_id ] );
 
 	return (
 		<Fragment>
@@ -36,6 +36,7 @@ const SegmentationSidebar = ( { onMetaFieldChange, selected_segment_id } ) => {
 					! selected_segment_id
 						? __( 'The prompt will be shown to all readers.', 'newspack-popups' )
 						: sprintf(
+								// Translators: Plural modifier.
 								__(
 									'The prompt will be shown only to readers who match the selected segment%s.',
 									'newspack-popups'
@@ -101,7 +102,7 @@ const SegmentationSidebar = ( { onMetaFieldChange, selected_segment_id } ) => {
 				href="/wp-admin/admin.php?page=newspack-popups-wizard#/segments"
 				key="segmentation-link"
 			>
-				{ __( 'Manage segments' ) }
+				{ __( 'Manage segments', 'newspack-popups' ) }
 			</ExternalLink>
 		</Fragment>
 	);

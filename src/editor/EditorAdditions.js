@@ -11,49 +11,32 @@ import { useEffect } from '@wordpress/element';
 /**
  * Internal dependencies
  */
-import { updateEditorColors } from './utils';
+import { isOverlayPlacement, updateEditorColors } from './utils';
 
 const EditorAdditions = () => {
 	const meta = useSelect( select => select( 'core/editor' ).getEditedPostAttribute( 'meta' ) );
-	const { dismiss_text, dismiss_text_alignment, background_color } = meta;
+	const { background_color, overlay_size, placement } = meta;
 
 	// Update editor colors to match popup colors.
-	useEffect(() => {
+	useEffect( () => {
 		updateEditorColors( background_color );
-	}, [ background_color ]);
+	}, [ background_color ] );
 
-	// Render a preview of the dismiss button at the end of the block content area.
-	useEffect(() => {
-		let dismissButtonPreview = document.querySelector(
-			'.newspack-popups__not-interested-button-preview'
-		);
+	// Setting editor size as per the popup size.
+	useEffect( () => {
+		const blockEditor = document.querySelector( '.block-editor-block-list__layout' );
+		if ( blockEditor ) {
+			blockEditor.classList.forEach( className => {
+				if ( className.startsWith( 'is-size-' ) ) {
+					blockEditor.classList.remove( className );
+				}
+			} );
 
-		if ( ! dismiss_text ) {
-			if ( dismissButtonPreview ) {
-				dismissButtonPreview.parentNode.removeChild( dismissButtonPreview );
-			}
-			return;
-		}
-
-		const alignClass = 'has-text-align-' + ( dismiss_text_alignment || 'center' );
-
-		if ( ! dismissButtonPreview ) {
-			const rootContainer = document.querySelector(
-				'.block-editor-block-list__layout.is-root-container'
-			);
-
-			if ( rootContainer ) {
-				dismissButtonPreview = document.createElement( 'div' );
-				rootContainer.appendChild( dismissButtonPreview );
+			if ( isOverlayPlacement( placement ) ) {
+				blockEditor.classList.add( `is-size-${ overlay_size }` );
 			}
 		}
-
-		if ( dismissButtonPreview ) {
-			dismissButtonPreview.className =
-				'newspack-popups__not-interested-button-preview wp-block ' + alignClass;
-			dismissButtonPreview.textContent = dismiss_text;
-		}
-	}, [ dismiss_text, dismiss_text_alignment ]);
+	}, [ overlay_size, placement ] );
 	return null;
 };
 

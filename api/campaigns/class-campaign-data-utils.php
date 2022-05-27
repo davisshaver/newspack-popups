@@ -10,12 +10,12 @@
  */
 class Campaign_Data_Utils {
 	/**
-	 * Is the URL from a newsletter?
+	 * Is client a subscriber?
 	 *
-	 * @param string $url A URL.
+	 * @param object $client_data Client data.
 	 */
-	public static function is_url_from_email( $url ) {
-		return stripos( $url, 'utm_medium=email' );
+	public static function is_subscriber( $client_data ) {
+		return ! empty( $client_data['email_subscriptions'] );
 	}
 
 	/**
@@ -25,6 +25,15 @@ class Campaign_Data_Utils {
 	 */
 	public static function is_donor( $client_data ) {
 		return ! empty( $client_data['donations'] );
+	}
+
+	/**
+	 * Is client logged in?
+	 *
+	 * @param object $client_data Client data.
+	 */
+	public static function is_logged_in( $client_data ) {
+		return ! empty( $client_data['user_id'] );
 	}
 
 	/**
@@ -44,17 +53,6 @@ class Campaign_Data_Utils {
 	}
 
 	/**
-	 * Is client a subscriber?
-	 *
-	 * @param object $client_data Client data.
-	 * @param string $url URL.
-	 */
-	public static function is_subscriber( $client_data, $url ) {
-		// If coming from email, assume it's a subscriber.
-		return ! empty( $client_data['email_subscriptions'] ) || self::is_url_from_email( $url );
-	}
-
-	/**
 	 * Add default values to a segment.
 	 *
 	 * @param object $segment Segment configuration.
@@ -71,6 +69,8 @@ class Campaign_Data_Utils {
 				'is_not_subscribed'   => false,
 				'is_donor'            => false,
 				'is_not_donor'        => false,
+				'is_logged_in'        => false,
+				'is_not_logged_in'    => false,
 				'referrers'           => '',
 				'favorite_categories' => [],
 				'priority'            => PHP_INT_MAX,
@@ -105,8 +105,9 @@ class Campaign_Data_Utils {
 				}
 			)
 		);
-		$is_subscriber            = self::is_subscriber( $client_data, $referer_url );
+		$is_subscriber            = self::is_subscriber( $client_data );
 		$is_donor                 = self::is_donor( $client_data );
+		$is_logged_in             = self::is_logged_in( $client_data );
 		$campaign_segment         = self::canonize_segment( $campaign_segment );
 
 		// Read counts for categories.
@@ -164,6 +165,16 @@ class Campaign_Data_Utils {
 			$should_display = false;
 		}
 		if ( $campaign_segment->is_not_donor && $is_donor ) {
+			$should_display = false;
+		}
+
+		/**
+		 * By login status.
+		 */
+		if ( $campaign_segment->is_logged_in && ! $is_logged_in ) {
+			$should_display = false;
+		}
+		if ( $campaign_segment->is_not_logged_in && $is_logged_in ) {
 			$should_display = false;
 		}
 

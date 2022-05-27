@@ -40,10 +40,10 @@ yarn.lock
 *.zip
 
 node_modules
+.cache
 .git
 .github
 .circleci
-/src
 /tests
 /bin
 /release

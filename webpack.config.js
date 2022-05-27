@@ -6,7 +6,7 @@
 /**
  * External dependencies
  */
-const getBaseWebpackConfig = require( '@automattic/calypso-build/webpack.config.js' );
+const getBaseWebpackConfig = require( 'newspack-scripts/config/getWebpackConfig' );
 const path = require( 'path' );
 
 /**
@@ -16,6 +16,8 @@ const editor = path.join( __dirname, 'src', 'editor' );
 const view = path.join( __dirname, 'src', 'view' );
 const documentSettings = path.join( __dirname, 'src', 'document-settings' );
 const settings = path.join( __dirname, 'src', 'settings' );
+const blocks = path.join( __dirname, 'src', 'blocks' );
+const customizer = path.join( __dirname, 'src', 'customizer' );
 
 const webpackConfig = getBaseWebpackConfig(
 	{ WP: true },
@@ -25,6 +27,8 @@ const webpackConfig = getBaseWebpackConfig(
 			view,
 			documentSettings,
 			settings,
+			blocks,
+			customizer,
 		},
 		'output-path': path.join( __dirname, 'dist' ),
 	}

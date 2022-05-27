@@ -179,33 +179,19 @@ final class Newspack_Popups_Segmentation {
 	}
 
 	/**
-	 * Should tracking code be inserted?
-	 */
-	public static function is_tracking() {
-		if ( Newspack_Popups_View_As::viewing_as_spec() ) {
-			return true;
-		}
-		if ( is_admin() || self::is_admin_user() || Newspack_Popups_Settings::is_non_interactive() ) {
-			return false;
-		}
-		return true;
-	}
-
-	/**
 	 * Insert amp-analytics tracking code.
 	 * Has to be included on every page to set the cookie.
 	 *
 	 * This amp-analytics tag will not report any analytics, it's only responsible for settings the cookie
 	 * bearing the client ID, as well as handling the linker paramerer when navigating from a proxy site.
 	 *
+	 * Because this tag doesn't report any analytics but is used to look up the reader's activity, it
+	 * should be included in preview requests and logged-in admin/editor sessions.
+	 *
 	 * There is a known issue with amp-analytics & amp-access interoperation – more on that at
 	 * https://github.com/Automattic/newspack-popups/pull/224#discussion_r496655085.
 	 */
 	public static function insert_amp_analytics() {
-		if ( ! self::is_tracking() ) {
-			return;
-		}
-
 		$linker_id            = 'cid';
 		$amp_analytics_config = [
 			// Linker will append a query param to all internal links.
@@ -236,24 +222,63 @@ final class Newspack_Popups_Segmentation {
 			$initial_client_report_url_params['mc_cid'] = sanitize_text_field( $_GET['mc_cid'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$initial_client_report_url_params['mc_eid'] = sanitize_text_field( $_GET['mc_eid'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
+
+		// Handle Newspack donations via WooCommerce.
 		if ( is_user_logged_in() && ! Newspack_Popups::is_preview_request() ) {
-			if ( function_exists( 'wc_get_orders' ) ) {
-				$user_orders = wc_get_orders( [ 'customer_id' => get_current_user_id() ] );
+			$newspack_donation_product_id = class_exists( '\Newspack\Donations' ) ?
+				(int) get_option( \Newspack\Donations::DONATION_PRODUCT_ID_OPTION, 0 ) :
+				0;
+
+			if ( class_exists( 'WooCommerce' ) ) {
+				$user_orders               = wc_get_orders( [ 'customer_id' => get_current_user_id() ] );
+				$newspack_donation_product = $newspack_donation_product_id ? wc_get_product( $newspack_donation_product_id ) : null;
+				$newspack_child_products   = $newspack_donation_product ? $newspack_donation_product->get_children() : [];
+
+				/**
+				 * Allows other plugins to designate additional WooCommerce products by ID that should be considered donations.
+				 *
+				 * @param int[] $product_ids Array of WooCommerce product IDs.
+				 */
+				$other_donation_products = apply_filters( 'newspack_popups_donation_products', [] );
+				$all_donation_products   = array_values( array_merge( $newspack_child_products, $other_donation_products ) );
+
 				if ( count( $user_orders ) ) {
 					$orders = [];
 					foreach ( $user_orders as $order ) {
-						$order_data = $order->get_data();
-						$orders[]   = [
-							'order_id' => $order_data['id'],
-							'date'     => date_format( date_create( $order_data['date_created'] ), 'Y-m-d' ),
-							'amount'   => $order_data['total'],
-						];
+						$order_data  = $order->get_data();
+						$order_items = array_map(
+							function( $item ) {
+								return $item->get_product_id();
+							},
+							array_values( $order->get_items() )
+						);
+
+						// Only count orders that include donation products as donations.
+						if ( 0 < count( array_intersect( $order_items, $all_donation_products ) ) ) {
+							$orders[] = [
+								'order_id' => $order_data['id'],
+								'date'     => date_format( date_create( $order_data['date_created'] ), 'Y-m-d' ),
+								'amount'   => $order_data['total'],
+							];
+						}
 					}
-					$initial_client_report_url_params['orders'] = wp_json_encode( $orders );
+
+					if ( count( $orders ) ) {
+						$initial_client_report_url_params['orders'] = wp_json_encode( $orders );
+					}
 				}
 			}
 
 			$initial_client_report_url_params['user_id'] = get_current_user_id();
+		}
+
+		// If visiting the donor landing page, mark the visitor as donor.
+		if ( intval( Newspack_Popups_Settings::donor_landing_page() ) === get_queried_object_id() ) {
+			$initial_client_report_url_params['donation'] = wp_json_encode(
+				[
+					'offsite_has_donated' => true,
+				]
+			);
 		}
 
 		if ( ! empty( $initial_client_report_url_params ) ) {
@@ -272,22 +297,6 @@ final class Newspack_Popups_Segmentation {
 			];
 		}
 
-		$donor_landing_page = Newspack_Popups_Settings::donor_landing_page();
-		if ( $donor_landing_page && intval( $donor_landing_page ) === get_queried_object_id() ) {
-			$amp_analytics_config['triggers']['reportDonor'] = [
-				'on'             => 'ini-load',
-				'request'        => 'event',
-				'extraUrlParams' => [
-					'donation'  => wp_json_encode(
-						[
-							'offsite_has_donated' => true,
-						]
-					),
-					'client_id' => 'CLIENT_ID(' . esc_attr( self::NEWSPACK_SEGMENTATION_CID_NAME ) . ')',
-				],
-			];
-		}
-
 		?>
 			<amp-analytics>
 				<script type="application/json">
@@ -302,8 +311,8 @@ final class Newspack_Popups_Segmentation {
 	 */
 	public static function create_database_table() {
 		global $wpdb;
-		$events_table_name = Segmentation::get_events_table_name();
-
+		$events_table_name     = Segmentation::get_events_table_name();
+		$transients_table_name = Segmentation::get_transients_table_name();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $events_table_name ) ) != $events_table_name ) {
 			$charset_collate = $wpdb->get_charset_collate();
@@ -329,6 +338,25 @@ final class Newspack_Popups_Segmentation {
 		} elseif ( 'date' === $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$events_table_name} LIKE %s", 'created_at' ), 1 ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( "ALTER TABLE {$events_table_name} CHANGE `created_at` `created_at` DATETIME NOT NULL" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $transients_table_name ) ) != $transients_table_name ) {
+			$charset_collate = $wpdb->get_charset_collate();
+
+			$sql = "CREATE TABLE $transients_table_name (
+				option_id bigint(20) unsigned NOT NULL auto_increment,
+				option_name varchar(191) NOT NULL default '',
+				option_value longtext NOT NULL,
+				date datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				-- Date of the last update.
+				PRIMARY KEY  (option_id),
+				UNIQUE KEY option_name (option_name)
+			) $charset_collate;";
+
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+			dbDelta( $sql ); // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.dbDelta_dbdelta
+			$wpdb->query( $wpdb->prepare( "INSERT INTO `{$transients_table_name}` (option_name, option_value) SELECT option_name, option_value FROM `{$wpdb->options}` WHERE option_name LIKE %s", "_transient%-popup%" ) ); // phpcs:ignore
+		}
 	}
 
 	/**
@@ -350,6 +378,27 @@ final class Newspack_Popups_Segmentation {
 			$segments = self::reindex_segments( $segments );
 		}
 
+		// Filter out non-existing categories.
+		$existing_categories_ids = get_categories(
+			[
+				'hide_empty' => false,
+				'fields'     => 'ids',
+			]
+		);
+		foreach ( $segments as &$segment ) {
+			if ( ! isset( $segment['configuration']['favorite_categories'] ) ) {
+				continue;
+			}
+			$fav_categories = $segment['configuration']['favorite_categories'];
+			if ( ! empty( $fav_categories ) ) {
+				$segment['configuration']['favorite_categories'] = array_values(
+					array_intersect(
+						$existing_categories_ids,
+						$fav_categories
+					)
+				);
+			}
+		}
 		return $segments;
 	}
 
@@ -585,13 +634,69 @@ final class Newspack_Popups_Segmentation {
 	}
 
 	/**
-	 * Only last month's worth of posts-read data is needed for segmentation features.
+	 * Remove unneeded data so the DB does not blow up.
 	 */
 	public static function prune_data() {
 		global $wpdb;
+		$transients_table_name = Segmentation::get_transients_table_name();
+
+		// Remove reader data if not containing donations nor subscriptions, and not updated in 30 days.
+		$removed_rows_count_transients = $wpdb->query( // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
+			"DELETE FROM $transients_table_name WHERE `option_value` LIKE '%\"donations\";a:0%' AND `option_value` LIKE '%\"email_subscriptions\";a:0%' AND date < now() - interval 30 DAY" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		// Remove all preview sessions data.
+		$removed_rows_count_previews_transients = $wpdb->query( // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
+			"DELETE FROM $transients_table_name WHERE option_name LIKE '%preview%'" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		);
+
+		// Events, like post read, don't need to stick around for more than 30 days.
 		$events_table_name         = Segmentation::get_events_table_name();
-		$removed_rows_count_events = $wpdb->query( $wpdb->prepare( "DELETE FROM $events_table_name WHERE type = %s AND created_at < now() - interval 30 DAY", 'post_read' ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$removed_rows_count_events = $wpdb->query( // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->prepare(
+				"DELETE FROM $events_table_name WHERE type = %s AND created_at < now() - interval 30 DAY", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				'post_read'
+			)
+		);
+
+		// Guard against data that grows past a certain size.
+		$byte_size_limit               = 10000;
+		$removed_rows_large_transients = $wpdb->query( // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->prepare(
+				"DELETE FROM $transients_table_name WHERE length(`option_value`) > %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$byte_size_limit
+			)
+		);
+
+		// Guard against user agents that generate many events: delete all rows older than 1 day when the total number of rows for that user exceeds $event_count_limit.
+		$event_count_limit           = 70;
+		$client_ids_with_many_events = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$wpdb->prepare(
+				"SELECT SQL_CALC_FOUND_ROWS `client_id` FROM $events_table_name GROUP BY `client_id` HAVING COUNT(`client_id`) > %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$event_count_limit
+			)
+		);
+
+		$removed_rows_with_many_events = 0;
+		foreach ( $client_ids_with_many_events as $row ) {
+			$removed_rows_with_many_events += $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
+				$wpdb->prepare(
+					"DELETE FROM $events_table_name WHERE `client_id` = %s AND type = %s AND created_at < now() - interval 1 DAY", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+					$row->client_id,
+					'post_read'
+				)
+			);
+		}
+
+		if ( defined( 'IS_TEST_ENV' ) && IS_TEST_ENV ) {
+			return;
+		}
+
+		error_log( 'Newspack Campaigns: Data pruning – removed ' . $removed_rows_count_transients . ' rows from ' . $transients_table_name . ' table.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log( 'Newspack Campaigns: Data pruning – removed ' . $removed_rows_count_previews_transients . ' preview session rows from ' . $transients_table_name . ' table.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		error_log( 'Newspack Campaigns: Data pruning – removed ' . $removed_rows_count_events . ' rows from ' . $events_table_name . ' table.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log( 'Newspack Campaigns: Data pruning – removed ' . $removed_rows_large_transients . ' rows from ' . $transients_table_name . ' table with data larger than ' . $byte_size_limit . ' bytes.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log( 'Newspack Campaigns: Data pruning – removed ' . $removed_rows_with_many_events . ' rows from ' . $events_table_name . ' table with more than ' . $event_count_limit . ' events.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
 }
 Newspack_Popups_Segmentation::instance();
