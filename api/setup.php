@@ -14,7 +14,6 @@ if ( file_exists( $wp_root_path . '__wp__' ) ) {
 	define( 'ABSPATH', $wp_root_path );
 }
 
-define( 'WPINC', 'wp-includes/' );
 if ( ! defined( 'WP_CONTENT_DIR' ) ) {
 	define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content/' );
 }
@@ -48,6 +47,10 @@ function trailingslashit( $string ) {
 	return rtrim( $string, '/\\' ) . '/';
 }
 
+if ( ! defined( 'WPINC' ) ) {
+	define( 'WPINC', 'wp-includes/' );
+}
+
 if ( file_exists( ABSPATH . WPINC . '/wp-db.php' ) ) {
 	require_once ABSPATH . WPINC . '/wp-db.php';
 	require_once ABSPATH . WPINC . '/functions.php';
@@ -59,7 +62,7 @@ if ( file_exists( ABSPATH . WPINC . '/wp-db.php' ) ) {
 
 if ( file_exists( WP_CONTENT_DIR . '/object-cache.php' ) ) {
 	require WP_CONTENT_DIR . '/object-cache.php';
-} else {
+} elseif ( file_exists( ABSPATH . WPINC . '/cache.php' ) ) {
 	require_once ABSPATH . WPINC . '/cache.php';
 }
 
