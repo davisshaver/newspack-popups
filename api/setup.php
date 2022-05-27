@@ -8,6 +8,20 @@
 // @codeCoverageIgnoreStart
 $wp_root_path = substr( $_SERVER['SCRIPT_FILENAME'], 0, strrpos( $_SERVER['SCRIPT_FILENAME'], 'wp-content/plugins/' ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.InputNotValidated
 
+if ( file_exists( $wp_root_path . '__wp__' ) ) {
+	define( 'ABSPATH', $wp_root_path . '__wp__/' );
+} else {
+	define( 'ABSPATH', $wp_root_path );
+}
+
+define( 'WPINC', 'wp-includes/' );
+if ( ! defined( 'WP_CONTENT_DIR' ) ) {
+	define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content/' );
+}
+if ( ! defined( 'WP_DEBUG' ) ) {
+	define( 'WP_DEBUG', false );
+}
+
 $legacy_config_path = $wp_root_path . 'newspack-popups-config.php';
 $config_path        = rtrim( WP_CONTENT_DIR, '/' ) . '/newspack-popups-config.php';
 if ( file_exists( $legacy_config_path ) ) {
@@ -18,10 +32,6 @@ if ( file_exists( $legacy_config_path ) ) {
 	header( 'HTTP/1.0 503 Service Unavailable' );
 	header( 'Content-Type: application/json' );
 	die( "{ error: 'missing_config_file' }" );
-}
-
-if ( ! defined( 'WP_CONTENT_DIR' ) ) {
-	define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content/' );
 }
 
 // phpcs:disable
@@ -38,23 +48,19 @@ function trailingslashit( $string ) {
 	return rtrim( $string, '/\\' ) . '/';
 }
 
-if ( file_exists( ABSPATH . WPINC . 'wp-db.php' ) ) {
-	require_once ABSPATH . WPINC . 'wp-db.php';
-	require_once ABSPATH . WPINC . 'functions.php';
+if ( file_exists( ABSPATH . WPINC . '/wp-db.php' ) ) {
+	require_once ABSPATH . WPINC . '/wp-db.php';
+	require_once ABSPATH . WPINC . '/functions.php';
 } else {
 	header( 'HTTP/1.0 503 Service Unavailable' );
 	header( 'Content-Type: application/json' );
 	die( "{ error: 'no_wordpress' }" );
 }
 
-if ( ! defined( 'WP_TEMP_DIR' ) ) {
-	define( 'WP_TEMP_DIR', WP_CONTENT_DIR . '/temp/' );
-}
-
 if ( file_exists( WP_CONTENT_DIR . '/object-cache.php' ) ) {
 	require WP_CONTENT_DIR . '/object-cache.php';
 } else {
-	require_once ABSPATH . WPINC . 'cache.php';
+	require_once ABSPATH . WPINC . '/cache.php';
 }
 
 global $wpdb;
