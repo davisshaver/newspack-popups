@@ -10,7 +10,7 @@
  */
 require_once dirname( __FILE__ ) . '/../classes/class-lightweight-api.php';
 
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once NEWSPACK_COMPOSER_ABSPATH . 'autoload.php';
 
 use \DrewM\MailChimp\MailChimp;
 
