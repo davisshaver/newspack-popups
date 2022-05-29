@@ -953,7 +953,7 @@ final class Newspack_Popups_Inserter {
 		}
 		$is_post_context_matching = $is_taxonomy_matching && in_array( $post_type, $supported_post_types );
 
-		return $is_post_context_matching;
+		return apply_filters( 'newspack_popups_should_display', $is_post_context_matching, $popup );
 	}
 }
 $newspack_popups_inserter = new Newspack_Popups_Inserter();
