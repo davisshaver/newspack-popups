@@ -72,7 +72,6 @@ final class Newspack_Popups_Inserter {
 		add_shortcode( 'newspack-popup', [ $this, 'popup_shortcode' ] );
 		add_action( 'after_header', [ $this, 'insert_popups_after_header' ] ); // This is a Newspack theme hook. When used with other themes, popups won't be inserted on archive pages.
 		add_action( 'wp_head', [ $this, 'insert_popups_amp_access' ] );
-		add_action( 'wp_head', [ $this, 'register_amp_scripts' ] );
 		add_action( 'before_header', [ $this, 'insert_before_header' ] );
 		add_action( 'after_archive_post', [ $this, 'insert_inline_prompt_in_archive_pages' ] );
 
@@ -523,6 +522,24 @@ final class Newspack_Popups_Inserter {
 	}
 
 	/**
+	 * Is the page AMP-enabled?
+	 *
+	 * @return bool True if AMP.
+	 */
+	public static function is_amp() {
+		return function_exists( 'is_amp_endpoint' ) && is_amp_endpoint();
+	}
+
+	/**
+	 * Can the site use AMP Plus features?
+	 *
+	 * @return bool Configured or not.
+	 */
+	public static function is_amp_plus() {
+		return method_exists( '\Newspack\AMP_Enhancements', 'should_use_amp_plus' ) && \Newspack\AMP_Enhancements::should_use_amp_plus();
+	}
+
+	/**
 	 * Enqueue the assets needed to display the popups.
 	 */
 	public static function enqueue_scripts() {
@@ -531,26 +548,27 @@ final class Newspack_Popups_Inserter {
 		}
 
 		// Don't enqueue assets if prompts are disabled on this post.
-		$has_disabled_prompts = is_singular() && ! empty( get_post_meta( get_the_ID(), 'newspack_popups_has_disabled_popups', true ) );
+		$has_disabled_prompts = \is_singular() && ! empty( \get_post_meta( \get_the_ID(), 'newspack_popups_has_disabled_popups', true ) );
 		if ( $has_disabled_prompts ) {
 			return;
 		}
 
-		$is_amp = function_exists( 'is_amp_endpoint' ) && is_amp_endpoint();
-		if ( ! $is_amp ) {
-			wp_register_script(
+		if ( ! self::is_amp() || self::is_amp_plus() ) {
+			\wp_register_script(
 				'newspack-popups-view',
 				plugins_url( '../dist/view.js', __FILE__ ),
-				[ 'wp-dom-ready', 'wp-url', 'mediaelement-core' ],
+				[ 'wp-url' ],
 				filemtime( dirname( NEWSPACK_POPUPS_PLUGIN_FILE ) . '/dist/view.js' ),
 				true
 			);
-			wp_enqueue_script( 'newspack-popups-view' );
+			\wp_enqueue_script( 'newspack-popups-view' );
+			\wp_script_add_data( 'newspack-popups-view', 'amp-plus', true );
+			\wp_script_add_data( 'newspack-popups-view', 'async', true );
 		}
 
 		\wp_register_style(
 			'newspack-popups-view',
-			plugins_url( '../dist/view.css', __FILE__ ),
+			\plugins_url( '../dist/view.css', __FILE__ ),
 			null,
 			filemtime( dirname( NEWSPACK_POPUPS_PLUGIN_FILE ) . '/dist/view.css' )
 		);
@@ -595,18 +613,18 @@ final class Newspack_Popups_Inserter {
 	 * @param object $popup A popup.
 	 */
 	public static function create_single_popup_access_payload( $popup ) {
-		$popup_id_string = Newspack_Popups_Model::canonize_popup_id( esc_attr( $popup['id'] ) );
-		$frequency       = $popup['options']['frequency'];
-		$is_overlay      = Newspack_Popups_Model::is_overlay( $popup );
-		$is_above_header = Newspack_Popups_Model::is_above_header( $popup );
-		$type            = 'i';
+		$popup_id_string   = Newspack_Popups_Model::canonize_popup_id( esc_attr( $popup['id'] ) );
+		$frequency         = $popup['options']['frequency'];
+		$frequency_max     = $popup['options']['frequency_max'];
+		$frequency_start   = $popup['options']['frequency_start'];
+		$frequency_between = $popup['options']['frequency_between'];
+		$frequency_reset   = $popup['options']['frequency_reset'];
+		$is_overlay        = Newspack_Popups_Model::is_overlay( $popup );
+		$is_above_header   = Newspack_Popups_Model::is_above_header( $popup );
+		$type              = 'i';
 
 		if ( $is_overlay ) {
 			$type = 'o';
-
-			if ( 'always' === $frequency ) {
-				$frequency = 'once';
-			}
 		}
 
 		if ( $is_above_header ) {
@@ -616,6 +634,10 @@ final class Newspack_Popups_Inserter {
 		$popup_payload = [
 			'id'  => $popup_id_string,
 			'f'   => $frequency,
+			'fm'  => $frequency_max,
+			'fs'  => $frequency_start,
+			'fb'  => $frequency_between,
+			'ft'  => $frequency_reset,
 			'utm' => $popup['options']['utm_suppression'],
 			's'   => $popup['options']['selected_segment_id'],
 			't'   => $type,
@@ -724,20 +746,6 @@ final class Newspack_Popups_Inserter {
 			$popups_configs[] = self::create_single_popup_access_payload( $popup );
 		}
 
-		$categories   = get_the_category();
-		$category_ids = '';
-		if ( ! empty( $categories ) ) {
-			$category_ids = implode(
-				',',
-				array_map(
-					function( $cat ) {
-						return $cat->term_id;
-					},
-					$categories
-				)
-			);
-		}
-
 		$settings = $previewed_popup_id ? [] : array_reduce(
 			\Newspack_Popups_Settings::get_settings( false, true ),
 			function ( $acc, $item ) {
@@ -748,16 +756,66 @@ final class Newspack_Popups_Inserter {
 			(object) []
 		);
 
+		// Info on the current pageview/visit.
+		$visit = [];
+
+		if ( is_singular() ) {
+			$visit['post_type'] = get_post_type();
+			$visit['post_id']   = get_the_ID();
+
+			$categories   = get_the_category();
+			$category_ids = '';
+			if ( ! empty( $categories ) ) {
+				$category_ids = implode(
+					',',
+					array_map(
+						function( $cat ) {
+							return $cat->term_id;
+						},
+						$categories
+					)
+				);
+			}
+
+			if ( ! empty( $category_ids ) ) {
+				$visit['categories'] = esc_attr( $category_ids );
+			}
+		} else {
+			global $wp;
+			$non_singular_query_type = 'unknown';
+			$request                 = $wp->query_vars;
+
+			if ( is_archive() ) {
+				$non_singular_query_type = 'archive';
+			}
+			if ( is_search() ) {
+				$non_singular_query_type = 'search';
+			}
+			if ( is_feed() ) {
+				$non_singular_query_type = 'feed';
+			}
+			if ( is_home() ) {
+				$non_singular_query_type = 'posts_page';
+			}
+			if ( is_404() ) {
+				$non_singular_query_type = '404';
+			}
+
+			$visit['request']      = $request;
+			$visit['request_type'] = $non_singular_query_type;
+		}
+
 		$popups_access_provider['authorization'] .= '&ref=DOCUMENT_REFERRER';
 		$popups_access_provider['authorization'] .= '&popups=' . wp_json_encode( $popups_configs );
 		$popups_access_provider['authorization'] .= '&settings=' . wp_json_encode( $settings );
-		$popups_access_provider['authorization'] .= '&visit=' . wp_json_encode(
-			[
-				'post_id'    => esc_attr( get_the_ID() ),
-				'categories' => esc_attr( $category_ids ),
-				'is_post'    => is_single(),
-			]
-		);
+		$popups_access_provider['authorization'] .= '&visit=' . wp_json_encode( $visit );
+
+		// Handle user accounts.
+		$user_id = get_current_user_id();
+		if ( ! empty( $user_id ) ) {
+			$popups_access_provider['authorization'] .= '&uid=' . absint( $user_id );
+		}
+
 		if ( isset( $_GET['newspack-campaigns-debug'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			$popups_access_provider['authorization'] .= '&debug';
 		}
@@ -776,40 +834,6 @@ final class Newspack_Popups_Inserter {
 	 */
 	public static function assess_has_disabled_popups() {
 		return apply_filters( 'newspack_popups_assess_has_disabled_popups', false );
-	}
-
-	/**
-	 * Register and enqueue all required AMP scripts, if needed.
-	 */
-	public static function register_amp_scripts() {
-		if ( self::assess_has_disabled_popups() ) {
-			return;
-		}
-		if ( ! is_admin() && ! wp_script_is( 'amp-runtime', 'registered' ) ) {
-		// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
-			wp_register_script(
-				'amp-runtime',
-				'https://cdn.ampproject.org/v0.js',
-				null,
-				null,
-				true
-			);
-		}
-		$scripts = [ 'amp-access', 'amp-animation', 'amp-bind', 'amp-position-observer' ];
-		foreach ( $scripts as $script ) {
-			if ( ! wp_script_is( $script, 'registered' ) ) {
-				$path = "https://cdn.ampproject.org/v0/{$script}-latest.js";
-				// phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
-				wp_register_script(
-					$script,
-					$path,
-					array( 'amp-runtime' ),
-					null,
-					true
-				);
-			}
-			wp_enqueue_script( $script );
-		}
 	}
 
 	/**
@@ -878,22 +902,18 @@ final class Newspack_Popups_Inserter {
 		}
 
 		$post_terms     = get_the_terms( get_the_ID(), $taxonomy );
-		$post_terms_ids = array_column( $post_terms ? $post_terms : [], 'term_id' );
+		$post_terms_ids = $post_terms ? array_column( $post_terms, 'term_id' ) : [];
 
 		// Check if a post term is excluded on the popup options.
 		if ( 'category' === $taxonomy ) {
-			foreach ( $popup['options']['excluded_categories'] as $category_excluded_id ) {
-				if ( in_array( $category_excluded_id, $post_terms_ids ) ) {
-					return false;
-				}
+			if ( 0 < count( array_intersect( $popup['options']['excluded_categories'], $post_terms_ids ) ) ) {
+				return false;
 			}
 		}
 
 		if ( 'post_tag' === $taxonomy ) {
-			foreach ( $popup['options']['excluded_tags'] as $post_tag_excluded_id ) {
-				if ( in_array( $post_tag_excluded_id, $post_terms_ids ) ) {
-					return false;
-				}
+			if ( 0 < count( array_intersect( $popup['options']['excluded_tags'], $post_terms_ids ) ) ) {
+				return false;
 			}
 		}
 
