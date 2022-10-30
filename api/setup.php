@@ -52,6 +52,7 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 if ( file_exists( ABSPATH . WPINC . '/wp-db.php' ) ) {
+	require_once ABSPATH . WPINC . '/compat.php';
 	require_once ABSPATH . WPINC . '/wp-db.php';
 	require_once ABSPATH . WPINC . '/functions.php';
 } else {

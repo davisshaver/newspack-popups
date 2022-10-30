@@ -1,3 +1,97 @@
+## [2.7.2](https://github.com/Automattic/newspack-popups/compare/v2.7.1...v2.7.2) (2022-10-25)
+
+
+### Bug Fixes
+
+* invoke wp polyfills for compatibility ([#997](https://github.com/Automattic/newspack-popups/issues/997)) ([3c8f790](https://github.com/Automattic/newspack-popups/commit/3c8f7909e63a93d8ba0b3e8f9335a8d743d71c38))
+
+## [2.7.1](https://github.com/Automattic/newspack-popups/compare/v2.7.0...v2.7.1) (2022-10-20)
+
+
+### Bug Fixes
+
+* enqueue AMP scripts for non-AMP ([e13ecae](https://github.com/Automattic/newspack-popups/commit/e13ecaea25d9eeba0767bfc84f1945f54e229912))
+* remove async attribute from script ([43a677f](https://github.com/Automattic/newspack-popups/commit/43a677f4a6d25eaa69d7a8882df4fb5656be9214))
+
+
+### Reverts
+
+* Revert "feat: polyfill amp-access script" ([7cb2467](https://github.com/Automattic/newspack-popups/commit/7cb246735704722d4a65e734c37398e08a788717))
+* polyfill fallback behavior from PR [#961](https://github.com/Automattic/newspack-popups/issues/961) ([a6d0409](https://github.com/Automattic/newspack-popups/commit/a6d0409573a4ea23a5f7ad40246d12d3ab2d23b5))
+
+# [2.7.0](https://github.com/Automattic/newspack-popups/compare/v2.6.2...v2.7.0) (2022-10-19)
+
+
+### Bug Fixes
+
+* **analytics:** only add form info to form submission events ([#960](https://github.com/Automattic/newspack-popups/issues/960)) ([72ff629](https://github.com/Automattic/newspack-popups/commit/72ff629ea4a6a50949db1d1de6c11e568e27ceca))
+* lower visibility threshold for prompt_seen events ([#976](https://github.com/Automattic/newspack-popups/issues/976)) ([607c20d](https://github.com/Automattic/newspack-popups/commit/607c20d701b88a2d8d0b22ea71a8957e1e234168))
+* **release:** use newspack-scripts with fixed semantic-release config ([52119cd](https://github.com/Automattic/newspack-popups/commit/52119cd9b4aa74ca275be4556077f3a6e4298a94))
+
+
+### Features
+
+* treat logged-in admins and editors as preview sessions ([#979](https://github.com/Automattic/newspack-popups/issues/979)) ([516d076](https://github.com/Automattic/newspack-popups/commit/516d07606a54e126eeb53914f3ae93783efdf988))
+
+# [2.7.0-alpha.3](https://github.com/Automattic/newspack-popups/compare/v2.7.0-alpha.2...v2.7.0-alpha.3) (2022-10-13)
+
+
+### Bug Fixes
+
+* prompt visibility animation ([b278793](https://github.com/Automattic/newspack-popups/commit/b278793f79e59ec640fc1933dc322b434a14284b))
+
+## [2.6.2](https://github.com/Automattic/newspack-popups/compare/v2.6.1...v2.6.2) (2022-10-13)
+
+
+### Bug Fixes
+
+* prompt visibility animation ([b278793](https://github.com/Automattic/newspack-popups/commit/b278793f79e59ec640fc1933dc322b434a14284b))
+
+## [2.6.1](https://github.com/Automattic/newspack-popups/compare/v2.6.0...v2.6.1) (2022-10-10)
+
+
+### Bug Fixes
+
+* cron job and mock IDs ([d0d99b9](https://github.com/Automattic/newspack-popups/commit/d0d99b93c18e85bb024db58564aa56c6416007b1))
+* handle purged cache ([59605be](https://github.com/Automattic/newspack-popups/commit/59605be1114573c2443d15af06390b6b28231d5d))
+* when to validate cache ([30f0944](https://github.com/Automattic/newspack-popups/commit/30f0944eed595a510d65f029b78d5226554d85cc))
+
+# [2.6.0](https://github.com/Automattic/newspack-popups/compare/v2.5.0...v2.6.0) (2022-09-27)
+
+
+### Bug Fixes
+
+* fallback to AMP script polyfills if AMP scripts are blocked ([#961](https://github.com/Automattic/newspack-popups/issues/961)) ([923e4fb](https://github.com/Automattic/newspack-popups/commit/923e4fbcc9ed1eed5984b2a4bfecb0ec2339a1ea))
+
+
+### Features
+
+* add concept of prompt styles and add large style ([0d3ad81](https://github.com/Automattic/newspack-popups/commit/0d3ad8181dff183eb686691e065e80b4ac856b64))
+* polyfill amp-access script ([9271111](https://github.com/Automattic/newspack-popups/commit/92711113be26885aace8ffd7856155c2442b807d)), closes [#193](https://github.com/Automattic/newspack-popups/issues/193)
+* remove wp-dom-ready, medialement dependencies for frontend script ([b4c930c](https://github.com/Automattic/newspack-popups/commit/b4c930cc8ca735f62c0f2cb4660e4da156dd75f8))
+* **segmentation:** by former donor status ([#954](https://github.com/Automattic/newspack-popups/issues/954)) ([0859c54](https://github.com/Automattic/newspack-popups/commit/0859c5473523b7c11cf4b1bad970f4fcfd81ac06))
+
+# [2.6.0-alpha.2](https://github.com/Automattic/newspack-popups/compare/v2.6.0-alpha.1...v2.6.0-alpha.2) (2022-09-26)
+
+
+### Features
+
+* add concept of prompt styles and add large style ([0d3ad81](https://github.com/Automattic/newspack-popups/commit/0d3ad8181dff183eb686691e065e80b4ac856b64))
+
+# [2.6.0-alpha.1](https://github.com/Automattic/newspack-popups/compare/v2.5.0...v2.6.0-alpha.1) (2022-09-21)
+
+
+### Bug Fixes
+
+* fallback to AMP script polyfills if AMP scripts are blocked ([#961](https://github.com/Automattic/newspack-popups/issues/961)) ([923e4fb](https://github.com/Automattic/newspack-popups/commit/923e4fbcc9ed1eed5984b2a4bfecb0ec2339a1ea))
+
+
+### Features
+
+* polyfill amp-access script ([9271111](https://github.com/Automattic/newspack-popups/commit/92711113be26885aace8ffd7856155c2442b807d)), closes [#193](https://github.com/Automattic/newspack-popups/issues/193)
+* remove wp-dom-ready, medialement dependencies for frontend script ([b4c930c](https://github.com/Automattic/newspack-popups/commit/b4c930cc8ca735f62c0f2cb4660e4da156dd75f8))
+* **segmentation:** by former donor status ([#954](https://github.com/Automattic/newspack-popups/issues/954)) ([0859c54](https://github.com/Automattic/newspack-popups/commit/0859c5473523b7c11cf4b1bad970f4fcfd81ac06))
+
 # [2.5.0](https://github.com/Automattic/newspack-popups/compare/v2.4.0...v2.5.0) (2022-09-21)
 
 

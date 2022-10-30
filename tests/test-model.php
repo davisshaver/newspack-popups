@@ -32,6 +32,7 @@ class ModelTest extends WP_UnitTestCase {
 				'background_color'               => '#FFFFFF',
 				'display_title'                  => false,
 				'hide_border'                    => false,
+				'large_border'                   => false,
 				'frequency'                      => 'always',
 				'frequency_max'                  => 0,
 				'frequency_start'                => 0,
@@ -130,7 +131,7 @@ class ModelTest extends WP_UnitTestCase {
 		@$dom->loadHTML( Newspack_Popups_Model::generate_popup( $popup_object_with_just_scroll ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 		$xpath = new DOMXpath( $dom );
 
-		self::assertContains(
+		self::assertStringContainsString(
 			'top: 0%',
 			$xpath->query( '//*[starts-with(@id,"page-position-marker")]' )->item( 0 )->getAttribute( 'style' ),
 			'The position marker is set at 0% by default.'
@@ -150,7 +151,7 @@ class ModelTest extends WP_UnitTestCase {
 		@$dom->loadHTML( Newspack_Popups_Model::generate_popup( $popup_object_with_set_scroll_progress ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 		$xpath = new DOMXpath( $dom );
 
-		self::assertContains(
+		self::assertStringContainsString(
 			'top: 42%',
 			$xpath->query( '//*[starts-with(@id,"page-position-marker")]' )->item( 0 )->getAttribute( 'style' ),
 			'The position marker is set at position passed in options.'
