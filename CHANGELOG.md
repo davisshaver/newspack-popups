@@ -1,3 +1,17 @@
+## [2.8.3](https://github.com/Automattic/newspack-popups/compare/v2.8.2...v2.8.3) (2022-11-16)
+
+
+### Bug Fixes
+
+* also limit query to fetch reconciled session client IDs ([09422f2](https://github.com/Automattic/newspack-popups/commit/09422f2cf08a56cbffaa39fed8a2c83d189087ed))
+
+## [2.8.2](https://github.com/Automattic/newspack-popups/compare/v2.8.1...v2.8.2) (2022-11-16)
+
+
+### Bug Fixes
+
+* limit reconciled sessions to max of 10 per reader ([a1e9cd9](https://github.com/Automattic/newspack-popups/commit/a1e9cd9b35e243c9e281b0042367b8eb2543a243))
+
 ## [2.8.1](https://github.com/Automattic/newspack-popups/compare/v2.8.0...v2.8.1) (2022-11-16)
 
 

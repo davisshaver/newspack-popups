@@ -74,15 +74,16 @@ class Lightweight_API {
 	 * Constructor.
 	 *
 	 * @param string|null $nonce If API is being instantiated directly by WP, it needs nonce verification.
+	 * @param boolean     $ignore_referer_validation If API is being instantiated directly by WP, it does not need to check referer.
 	 *
 	 * @codeCoverageIgnore
 	 */
-	public function __construct( $nonce = null ) {
+	public function __construct( $nonce = null, $ignore_referer_validation = false ) {
 		if ( $this->is_a_web_crawler() ) {
 			header( 'X-Robots-Tag: noindex' );
 			exit;
 		}
-		if ( ! $this->verify_referer( $nonce ) ) {
+		if ( ! $this->verify_referer( $nonce ) && ! $ignore_referer_validation ) {
 			$this->error( 'invalid_referer' );
 		}
 		if ( $this->is_debug_enabled() ) {
@@ -371,6 +372,8 @@ class Lightweight_API {
 	 * Given an event type and value, find other client IDs with matching type and value
 	 * and reconcile all client IDs so they're considered a single reader.
 	 *
+	 * Limit the number of reconciled sessions to 10 for performance reasons.
+	 *
 	 * @param string $current_client_id The client ID of the current reader session.
 	 * @param string $type The type of event to look up.
 	 * @param mixed  $context The context of the event to look up.
@@ -382,7 +385,7 @@ class Lightweight_API {
 		$reader_events_table_name = Segmentation::get_reader_events_table_name();
 		$client_ids               = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->prepare(
-				"SELECT DISTINCT client_id FROM $reader_events_table_name WHERE type = %s AND context = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT DISTINCT client_id FROM $reader_events_table_name WHERE type = %s AND context = %s ORDER BY date_created DESC LIMIT 10", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$type,
 				$context
 			)
@@ -413,6 +416,9 @@ class Lightweight_API {
 				} else {
 					$reader_data['client_ids'] = $client_ids;
 				}
+
+				// Limit number of reconciled sessions to 10.
+				$reader_data['client_ids'] = array_slice( $reader_data['client_ids'], -10, 10 );
 
 				// Only update if there are new client IDs to add.
 				if ( ! empty( array_diff( $reader_data['client_ids'], $original_client_ids ) ) ) {
