@@ -30,6 +30,7 @@ class Maybe_Show_Campaign extends Lightweight_API {
 		$response  = [];
 		$client_id = $_REQUEST['cid']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$user_id   = isset( $_REQUEST['uid'] ) ? absint( $_REQUEST['uid'] ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$member   = isset( $_REQUEST['member'] ) ? boolval( $_REQUEST['member'] ) : false; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 		$view_as_spec = [];
 		if ( ! empty( $_REQUEST['view_as'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -48,6 +49,17 @@ class Maybe_Show_Campaign extends Lightweight_API {
 					$reader_events[] = [
 						'type'    => 'user_account',
 						'context' => $user_id,
+					];
+				}
+			}
+
+			// Handle user accounts.
+			if ( ! empty( $member ) ) {
+				$existing_member = $this->get_reader_events( $client_id, 'donation' );
+				if ( 0 === count( $existing_member ) ) {
+					$reader_events[] = [
+						'type'    => 'donation',
+						'context' => 'memberpress',
 					];
 				}
 			}

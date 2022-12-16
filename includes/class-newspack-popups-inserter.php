@@ -806,6 +806,17 @@ final class Newspack_Popups_Inserter {
 		$user_id = Newspack_Popups::is_user_admin() ? 0 : get_current_user_id();
 		if ( ! empty( $user_id ) ) {
 			$popups_access_provider['authorization'] .= '&uid=' . absint( $user_id );
+
+			// Check if user is a member.
+			if ( class_exists( '\MeprUser' ) ) {
+				$mepr_user            = new \MeprUser( $user_id );
+				$subscriptions        = $mepr_user->active_product_subscriptions( 'ids' );
+				$member_subscriptions = [ 17230, 1414 ];
+				// Check if any of the subscription IDs in $subscriptions match the IDs in $member_subscriptions.
+				if ( array_intersect( $subscriptions, $member_subscriptions ) ) {
+					$popups_access_provider['authorization'] .= '&member=true';
+				}
+			}
 		}
 
 		if ( isset( $_GET['newspack-campaigns-debug'] ) || ( defined( 'NEWSPACK_POPUPS_DEBUG' ) && NEWSPACK_POPUPS_DEBUG ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
