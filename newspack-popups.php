@@ -19,7 +19,10 @@ if ( ! defined( 'NEWSPACK_POPUPS_PLUGIN_FILE' ) ) {
 	define( 'NEWSPACK_POPUPS_PLUGIN_FILE', __FILE__ );
 }
 
-require_once dirname( __FILE__ ) . '/vendor/autoload.php';
+if ( ! defined( 'NEWSPACK_COMPOSER_ABSPATH' ) ) {
+	define( 'NEWSPACK_COMPOSER_ABSPATH', dirname( NEWSPACK_PLUGIN_FILE ) . '/vendor/' );
+}
+require_once NEWSPACK_COMPOSER_ABSPATH . 'autoload.php';
 
 // Include the main Newspack Google Ad Manager class.
 if ( ! class_exists( 'Newspack_Popups' ) ) {
