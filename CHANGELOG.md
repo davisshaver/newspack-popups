@@ -1,3 +1,24 @@
+## [2.9.2](https://github.com/Automattic/newspack-popups/compare/v2.9.1...v2.9.2) (2022-12-20)
+
+
+### Bug Fixes
+
+* prevent API bot exit without referer ([#1035](https://github.com/Automattic/newspack-popups/issues/1035)) ([bc8ec5b](https://github.com/Automattic/newspack-popups/commit/bc8ec5bea8d0ecacab7f5deec9e747dfc5141e37))
+
+## [2.9.2-hotfix.1](https://github.com/Automattic/newspack-popups/compare/v2.9.1...v2.9.2-hotfix.1) (2022-12-20)
+
+
+### Bug Fixes
+
+* prevent API bot exit without referer ([b9f5c56](https://github.com/Automattic/newspack-popups/commit/b9f5c5646580f7f354dac1279a33a7398bc6491c))
+
+## [2.9.1](https://github.com/Automattic/newspack-popups/compare/v2.9.0...v2.9.1) (2022-12-20)
+
+
+### Bug Fixes
+
+* temporarily remove cd filter ([#1034](https://github.com/Automattic/newspack-popups/issues/1034)) ([c2c7f8e](https://github.com/Automattic/newspack-popups/commit/c2c7f8e47b1f738eea6c625db23e0314bd29066a))
+
 # [2.9.0](https://github.com/Automattic/newspack-popups/compare/v2.8.3...v2.9.0) (2022-12-12)
 
 
