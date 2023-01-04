@@ -98,7 +98,7 @@ class Maybe_Show_Campaign extends Lightweight_API {
 		}
 
 		if ( $settings ) {
-			$settings->best_priority_segment_id = $this->get_best_priority_segment_id( $all_segments, $client_id, $referer_url, $page_referer_url, $view_as_spec );
+			$settings->best_priority_segment_id = $this->get_best_priority_segment_id( $client_id, $all_segments, $referer_url, $page_referer_url, $view_as_spec );
 
 			if ( $this->is_debug_enabled() ) {
 				$this->debug['matching_segment'] = $settings->best_priority_segment_id;
@@ -194,7 +194,7 @@ class Maybe_Show_Campaign extends Lightweight_API {
 	 *
 	 * @return string|null ID of the best matching segment, or null if the client matches no segment.
 	 */
-	public function get_best_priority_segment_id( $all_segments = [], $client_id, $referer_url = '', $page_referer_url = '', $view_as_spec = false ) {
+	public function get_best_priority_segment_id( $client_id, $all_segments = [], $referer_url = '', $page_referer_url = '', $view_as_spec = false ) {
 		// If using "view as" feature, automatically make that the matching segment. Otherwise, find the matching segment with the best priority.
 		if ( $view_as_spec && isset( $view_as_spec['segment'] ) ) {
 			return $view_as_spec['segment'];
@@ -288,7 +288,7 @@ class Maybe_Show_Campaign extends Lightweight_API {
 			// $settings->best_priority_segment_id should always be present, but in case it's not (e.g. in a unit test), we can fetch it here.
 			$best_priority_segment_id = isset( $settings->best_priority_segment_id ) ?
 				$settings->best_priority_segment_id :
-				$this->get_best_priority_segment_id( $settings->all_segments, $client_id, $referer_url, $page_referer_url, $view_as_spec );
+				$this->get_best_priority_segment_id( $client_id, $settings->all_segments, $referer_url, $page_referer_url, $view_as_spec );
 
 			// Only factor in the best-priority segment.
 			$is_best_priority = ! empty( $best_priority_segment_id ) ? in_array( $best_priority_segment_id, $popup_segment_ids ) : false;
