@@ -186,8 +186,8 @@ class Maybe_Show_Campaign extends Lightweight_API {
 	/**
 	 * Get the best-priority segment that matches the client.
 	 *
-	 * @param object      $all_segments Segments to check.
 	 * @param string      $client_id Client ID.
+	 * @param object      $all_segments Segments to check.
 	 * @param string      $referer_url URL of the page performing the API request.
 	 * @param string      $page_referer_url URL of the referrer of the frontend page that is making the API request.
 	 * @param object|bool $view_as_spec View as spec.
@@ -284,7 +284,7 @@ class Maybe_Show_Campaign extends Lightweight_API {
 					$should_display = true;
 				}
 			}
-		} elseif ( $should_display && ! empty( $popup_segment_ids ) ) {
+		} elseif ( $should_display && ! empty( $popup_segment_ids ) && ! empty( $settings ) ) {
 			// $settings->best_priority_segment_id should always be present, but in case it's not (e.g. in a unit test), we can fetch it here.
 			$best_priority_segment_id = isset( $settings->best_priority_segment_id ) ?
 				$settings->best_priority_segment_id :
