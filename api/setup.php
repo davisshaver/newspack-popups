@@ -21,6 +21,10 @@ if ( ! defined( 'WP_DEBUG' ) ) {
 	define( 'WP_DEBUG', false );
 }
 
+if ( ! defined( 'NEWSPACK_POPUPS_EVENTS_LOG_FILENAME' ) ) {
+	define( 'NEWSPACK_POPUPS_EVENTS_LOG_FILENAME', 'newspack-popups-events' );
+}
+
 $legacy_config_path = $wp_root_path . 'newspack-popups-config.php';
 $config_path        = rtrim( WP_CONTENT_DIR, '/' ) . '/newspack-popups-config.php';
 if ( file_exists( $legacy_config_path ) ) {

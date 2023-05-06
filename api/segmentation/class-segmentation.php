@@ -23,7 +23,7 @@ class Segmentation {
 	 */
 	public static function get_log_file_path() {
 		global $table_prefix;
-		return get_temp_dir() . $table_prefix . 'newspack-popups-events.log';
+		return get_temp_dir() . $table_prefix . NEWSPACK_POPUPS_EVENTS_LOG_FILENAME . '.log';
 	}
 
 	/**
