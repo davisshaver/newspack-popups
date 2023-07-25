@@ -87,6 +87,7 @@ final class Newspack_Popups {
 			add_filter( 'show_admin_bar', [ __CLASS__, 'show_admin_bar' ], 10, 2 ); // phpcs:ignore WordPressVIPMinimum.UserExperience.AdminBarRemoval.RemovalDetected
 
 			include_once dirname( __FILE__ ) . '/class-newspack-popups-model.php';
+			include_once dirname( __FILE__ ) . '/class-newspack-segments-model.php';
 			include_once dirname( __FILE__ ) . '/class-newspack-popups-presets.php';
 			include_once dirname( __FILE__ ) . '/class-newspack-popups-inserter.php';
 			include_once dirname( __FILE__ ) . '/class-newspack-popups-api.php';
@@ -1163,8 +1164,20 @@ final class Newspack_Popups {
 
 	/**
 	 * Retrieve campaigns.
+	 *
+	 * @return WP_Term[] An array of WP_Term objects.
 	 */
 	public static function get_groups() {
+		$terms = get_terms(
+			self::NEWSPACK_POPUPS_TAXONOMY,
+			[
+				'hide_empty' => false,
+			]
+		);
+		if ( ! is_array( $terms ) || empty( $terms ) ) {
+			return [];
+		}
+
 		$groups = array_map(
 			function( $group ) {
 				$group->status = get_term_meta(
@@ -1174,12 +1187,7 @@ final class Newspack_Popups {
 				);
 				return $group;
 			},
-			get_terms(
-				self::NEWSPACK_POPUPS_TAXONOMY,
-				[
-					'hide_empty' => false,
-				]
-			)
+			$terms
 		);
 		return $groups;
 	}
