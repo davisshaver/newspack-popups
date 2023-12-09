@@ -19,9 +19,6 @@ final class Newspack_Popups {
 	const NEWSPACK_POPUP_PRESET_QUERY_PARAM     = 'preset';
 	const NEWSPACK_POPUPS_TAXONOMY_STATUS       = 'newspack_popups_taxonomy_status';
 
-	const LIGHTWEIGHT_API_CONFIG_FILE_PATH_LEGACY = WP_CONTENT_DIR . '/../newspack-popups-config.php';
-	const LIGHTWEIGHT_API_CONFIG_FILE_PATH        = WP_CONTENT_DIR . '/newspack-popups-config.php';
-
 	const PREVIEW_QUERY_KEYS = [
 		'background_color'               => 'n_bc',
 		'hide_border'                    => 'n_hb',
@@ -95,18 +92,19 @@ final class Newspack_Popups {
 		add_filter( 'show_admin_bar', [ __CLASS__, 'show_admin_bar' ], 10, 2 ); // phpcs:ignore WordPressVIPMinimum.UserExperience.AdminBarRemoval.RemovalDetected
 		add_filter( 'newspack_blocks_should_deduplicate', [ __CLASS__, 'newspack_blocks_should_deduplicate' ], 10, 2 );
 
-		include_once dirname( __FILE__ ) . '/class-newspack-popups-model.php';
-		include_once dirname( __FILE__ ) . '/class-newspack-segments-migration.php';
-		include_once dirname( __FILE__ ) . '/class-newspack-segments-model.php';
-		include_once dirname( __FILE__ ) . '/class-newspack-popups-presets.php';
-		include_once dirname( __FILE__ ) . '/class-newspack-popups-inserter.php';
-		include_once dirname( __FILE__ ) . '/class-newspack-popups-api.php';
-		include_once dirname( __FILE__ ) . '/class-newspack-popups-settings.php';
-		include_once dirname( __FILE__ ) . '/class-newspack-popups-segmentation.php';
-		include_once dirname( __FILE__ ) . '/class-newspack-popups-custom-placements.php';
-		include_once dirname( __FILE__ ) . '/class-newspack-popups-view-as.php';
-		include_once dirname( __FILE__ ) . '/class-newspack-popups-data-api.php';
-		include_once dirname( __FILE__ ) . '/class-newspack-popups-criteria.php';
+		include_once __DIR__ . '/class-newspack-popups-logger.php';
+		include_once __DIR__ . '/class-newspack-popups-model.php';
+		include_once __DIR__ . '/class-newspack-segments-migration.php';
+		include_once __DIR__ . '/class-newspack-segments-model.php';
+		include_once __DIR__ . '/class-newspack-popups-presets.php';
+		include_once __DIR__ . '/class-newspack-popups-inserter.php';
+		include_once __DIR__ . '/class-newspack-popups-api.php';
+		include_once __DIR__ . '/class-newspack-popups-settings.php';
+		include_once __DIR__ . '/class-newspack-popups-segmentation.php';
+		include_once __DIR__ . '/class-newspack-popups-custom-placements.php';
+		include_once __DIR__ . '/class-newspack-popups-view-as.php';
+		include_once __DIR__ . '/class-newspack-popups-data-api.php';
+		include_once __DIR__ . '/class-newspack-popups-criteria.php';
 	}
 
 	/**
@@ -162,7 +160,7 @@ final class Newspack_Popups {
 			'public'       => false,
 			'show_ui'      => true,
 			'show_in_rest' => true,
-			'supports'     => [ 'editor', 'title', 'custom-fields', 'thumbnail' ],
+			'supports'     => [ 'editor', 'title', 'custom-fields', 'thumbnail', 'revisions' ],
 			'taxonomies'   => [ 'category', 'post_tag' ],
 			'menu_icon'    => 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDI0IDI0IiByb2xlPSJpbWciIGFyaWEtaGlkZGVuPSJ0cnVlIiBmb2N1c2FibGU9ImZhbHNlIj48cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik02Ljg2MyAxMy42NDRMNSAxMy4yNWgtLjVhLjUuNSAwIDAxLS41LS41di0zYS41LjUgMCAwMS41LS41SDVMMTggNi41aDJWMTZoLTJsLTMuODU0LS44MTUuMDI2LjAwOGEzLjc1IDMuNzUgMCAwMS03LjMxLTEuNTQ5em0xLjQ3Ny4zMTNhMi4yNTEgMi4yNTEgMCAwMDQuMzU2LjkyMWwtNC4zNTYtLjkyMXptLTIuODQtMy4yOEwxOC4xNTcgOGguMzQzdjYuNWgtLjM0M0w1LjUgMTEuODIzdi0xLjE0NnoiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZmlsbD0id2hpdGUiPjwvcGF0aD48L3N2Zz4K',
 		];
