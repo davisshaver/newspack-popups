@@ -4,13 +4,13 @@
   "description": "AMP-compatible popup notifications.",
   "type": "wordpress-plugin",
   "require-dev": {
-    "automattic/vipwpcs": "^2.0",
-    "wp-coding-standards/wpcs": "^2.1",
+    "automattic/vipwpcs": "^3.0",
+    "wp-coding-standards/wpcs": "^3.0",
     "phpcompatibility/phpcompatibility-wp": "^2.1",
     "composer/installers": "^2.0",
     "brainmaestro/composer-git-hooks": "^2.8",
     "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0",
-    "yoast/phpunit-polyfills": "^1.0",
+    "yoast/phpunit-polyfills": "^1.1",
     "phpunit/phpunit": "^7.0 || ^9.5",
     "dms/phpunit-arraysubset-asserts": "^0.5.0"
   },

@@ -7,7 +7,7 @@
 
 namespace Newspack\Campaigns\Schemas;
 
-use \Newspack\Campaigns\Schema;
+use Newspack\Campaigns\Schema;
 use Newspack_Popups_Model;
 
 /**
@@ -49,6 +49,12 @@ class Prompts extends Schema {
 					'name'     => 'ready',
 					'type'     => 'boolean',
 					'required' => false,
+				],
+				'duplicate_of'      => [
+					'name'     => 'duplicate_of',
+					'type'     => 'integer',
+					'required' => false,
+					'default'  => 0,
 				],
 				'campaign_groups'   => [
 					'name'     => 'campaign_groups',
@@ -361,12 +367,6 @@ class Prompts extends Schema {
 									],
 								],
 							],
-						],
-						'duplicate_of'                   => [
-							'name'     => 'duplicate_of',
-							'type'     => 'integer',
-							'required' => false,
-							'default'  => 0,
 						],
 						'newspack_popups_has_disabled_popups' => [
 							'name'     => 'newspack_popups_has_disabled_popups',

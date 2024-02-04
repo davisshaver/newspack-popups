@@ -7,7 +7,7 @@
  * Author URI:      https://newspack.com
  * Text Domain:     newspack-popups
  * Domain Path:     /languages
- * Version:         2.27.0
+ * Version:         2.29.1
  *
  * @package         Newspack_Popups
  */
@@ -26,5 +26,5 @@ require_once NEWSPACK_COMPOSER_ABSPATH . 'autoload.php';
 
 // Include the main Newspack Google Ad Manager class.
 if ( ! class_exists( 'Newspack_Popups' ) ) {
-	include_once dirname( __FILE__ ) . '/includes/class-newspack-popups.php';
+	include_once __DIR__ . '/includes/class-newspack-popups.php';
 }
