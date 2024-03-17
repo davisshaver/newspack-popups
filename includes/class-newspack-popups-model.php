@@ -976,6 +976,7 @@ final class Newspack_Popups_Model {
 				id="<?php echo esc_attr( $element_id ); ?>"
 				data-segments="<?php echo esc_attr( $assigned_segments ); ?>"
 				data-frequency="<?php echo esc_attr( $frequency_config ); ?>"
+				data-nosnippet
 			>
 				<?php echo do_shortcode( $body ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			</div>
@@ -1061,7 +1062,7 @@ final class Newspack_Popups_Model {
 			id="<?php echo esc_attr( $element_id ); ?>"
 			data-segments="<?php echo esc_attr( $assigned_segments ); ?>"
 			data-frequency="<?php echo esc_attr( $frequency_config ); ?>"
-
+			data-nosnippet
 			<?php if ( $is_scroll_triggered ) : ?>
 			data-scroll="<?php echo esc_attr( $popup['options']['trigger_scroll_progress'] ); ?>"
 			<?php else : ?>
