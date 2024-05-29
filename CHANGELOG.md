@@ -1,3 +1,48 @@
+# [2.32.0](https://github.com/Automattic/newspack-popups/compare/v2.31.3...v2.32.0) (2024-05-28)
+
+
+### Bug Fixes
+
+* improved attribute handling ([f3eb1ae](https://github.com/Automattic/newspack-popups/commit/f3eb1ae6007ed2ca3d76319c894f9d1830bfd740))
+
+
+### Features
+
+* update header hook to a more standard one ([#1302](https://github.com/Automattic/newspack-popups/issues/1302)) ([fe756a4](https://github.com/Automattic/newspack-popups/commit/fe756a4e00dd8fe74373df5d97bf001737a80b5c))
+
+
+### Reverts
+
+* automated file updates [skip ci] ([b59282c](https://github.com/Automattic/newspack-popups/commit/b59282cffa7284319ee85ee1d41cf8723086c4ea))
+
+## [2.31.3](https://github.com/Automattic/newspack-popups/compare/v2.31.2...v2.31.3) (2024-04-26)
+
+
+### Bug Fixes
+
+* disable manual & custom placement prompts when prompts are disabled ([#1299](https://github.com/Automattic/newspack-popups/issues/1299)) ([aff5777](https://github.com/Automattic/newspack-popups/commit/aff5777873785055ce3e24a03ad7f549bf48feb3))
+
+## [2.31.2](https://github.com/Automattic/newspack-popups/compare/v2.31.1...v2.31.2) (2024-04-23)
+
+
+### Bug Fixes
+
+* improved attribute handling ([b53415a](https://github.com/Automattic/newspack-popups/commit/b53415a95b8f7c65ecd421117d656c8e5effc3da))
+
+## [2.31.1](https://github.com/Automattic/newspack-popups/compare/v2.31.0...v2.31.1) (2024-04-08)
+
+
+### Bug Fixes
+
+* ga4 events ([11ca3b8](https://github.com/Automattic/newspack-popups/commit/11ca3b8a0e8e5b586d76a6a27659d33b0246683c))
+
+## [2.31.1-alpha.1](https://github.com/Automattic/newspack-popups/compare/v2.31.0...v2.31.1-alpha.1) (2024-03-28)
+
+
+### Bug Fixes
+
+* ga4 events ([11ca3b8](https://github.com/Automattic/newspack-popups/commit/11ca3b8a0e8e5b586d76a6a27659d33b0246683c))
+
 # [2.31.0](https://github.com/Automattic/newspack-popups/compare/v2.30.1...v2.31.0) (2024-03-04)
 
 
