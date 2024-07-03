@@ -41,3 +41,5 @@ require_once NEWSPACK_COMPOSER_ABSPATH . 'autoload.php';
 // Start up the WP testing environment.
 require $_tests_dir . '/includes/bootstrap.php';
 require dirname( __DIR__ ) . '/tests/wp-unittestcase-pagewithpopups.php';
+
+ini_set( 'error_log', 'php://stdout' ); // phpcs:ignore WordPress.PHP.IniSet.Risky
