@@ -1,6 +1,6 @@
 {
 	"name": "newspack-popups",
-	"version": "3.1.1",
+	"version": "3.1.4",
 	"author": "Automattic",
 	"scripts": {
 		"cm": "newspack-scripts commit",
@@ -34,7 +34,7 @@
 		"classnames": "^2.5.1",
 		"intersection-observer": "^0.12.2",
 		"js-cookie": "^3.0.5",
-		"newspack-components": "^3.0.0",
+		"newspack-components": "^3.1.0",
 		"qs": "^6.13.0"
 	},
 	"devDependencies": {
