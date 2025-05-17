@@ -1083,6 +1083,7 @@ final class Newspack_Popups_Model {
 		$is_scroll_triggered            = 'scroll' === $popup['options']['trigger_type'];
 		$assigned_segments              = Newspack_Segments_Model::get_popup_segments_ids_string( $popup['id'] );
 		$frequency_config               = self::get_frequency_config( $popup );
+		$utm_suppression                = $popup['options']['utm_suppression'];
 
 		$close_button_styles = 'color: ' . $close_button_color . ';';
 		if ( $enable_close_button_background ) {
@@ -1102,6 +1103,10 @@ final class Newspack_Popups_Model {
 			data-segments="<?php echo esc_attr( $assigned_segments ); ?>"
 			data-frequency="<?php echo esc_attr( $frequency_config ); ?>"
 			data-nosnippet
+			<?php if ( ! empty( $utm_suppression ) ) : ?>
+				data-suppression="<?php echo esc_attr( $utm_suppression ); ?>"
+			<?php endif; ?>
+
 			<?php if ( $is_scroll_triggered ) : ?>
 			data-scroll="<?php echo esc_attr( $popup['options']['trigger_scroll_progress'] ); ?>"
 			<?php else : ?>
