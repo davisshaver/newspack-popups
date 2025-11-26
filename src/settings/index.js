@@ -7,22 +7,12 @@ import { render, useState } from '@wordpress/element';
 import domReady from '@wordpress/dom-ready';
 import { __ } from '@wordpress/i18n';
 import apiFetch from '@wordpress/api-fetch';
-import {
-	Button,
-	Card,
-	CardBody,
-	CardHeader,
-	CheckboxControl,
-	FlexBlock,
-	Notice,
-	SelectControl,
-	TextControl,
-} from '@wordpress/components';
+import { Button, Card, CardBody, CardHeader, CheckboxControl, FlexBlock, Notice, SelectControl, TextControl } from '@wordpress/components';
 
 /**
  * Newspack dependencies.
  */
-import { NewspackLogo } from 'newspack-components';
+import { NewspackIcon } from 'newspack-components';
 
 /**
  * Internal dependencies
@@ -73,22 +63,14 @@ const App = () => {
 					return (
 						<TextControl
 							{ ...props }
-							value={
-								settingsToUpdate.hasOwnProperty( setting.key )
-									? settingsToUpdate[ setting.key ]
-									: setting.value
-							}
+							value={ settingsToUpdate.hasOwnProperty( setting.key ) ? settingsToUpdate[ setting.key ] : setting.value }
 						/>
 					);
 				case 'select':
 					return (
 						<SelectControl
 							{ ...props }
-							value={
-								settingsToUpdate.hasOwnProperty( setting.key )
-									? settingsToUpdate[ setting.key ]
-									: setting.value
-							}
+							value={ settingsToUpdate.hasOwnProperty( setting.key ) ? settingsToUpdate[ setting.key ] : setting.value }
 							options={ setting.options }
 						/>
 					);
@@ -96,11 +78,7 @@ const App = () => {
 					return (
 						<CheckboxControl
 							{ ...props }
-							checked={
-								settingsToUpdate.hasOwnProperty( setting.key )
-									? settingsToUpdate[ setting.key ]
-									: !! setting.value
-							}
+							checked={ settingsToUpdate.hasOwnProperty( setting.key ) ? settingsToUpdate[ setting.key ] : !! setting.value }
 						/>
 					);
 			}
@@ -111,13 +89,8 @@ const App = () => {
 	return (
 		<div className="newspack-campaigns__wrapper">
 			<div className="newspack-logo__wrapper">
-				<Button
-					className="newspack-logo-button"
-					href="https://newspack.pub/"
-					target="_blank"
-					label={ __( 'By Newspack' ) }
-				>
-					<NewspackLogo height={ 32 } />
+				<Button className="newspack-logo-button" href="https://newspack.pub/" target="_blank" label={ __( 'By Newspack' ) }>
+					<NewspackIcon height={ 32 } />
 				</Button>
 			</div>
 			<Card>
@@ -134,10 +107,7 @@ const App = () => {
 						</Notice>
 					) }
 					<div className="newspack-popups-save">
-						<Button
-							disabled={ inFlight || 0 === Object.keys( settingsToUpdate ).length }
-							onClick={ handleSave }
-						>
+						<Button disabled={ inFlight || 0 === Object.keys( settingsToUpdate ).length } onClick={ handleSave }>
 							{ __( 'Save', 'newspack-popups' ) }
 						</Button>
 					</div>
