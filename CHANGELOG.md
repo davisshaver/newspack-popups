@@ -1,3 +1,41 @@
+## [3.10.3](https://github.com/Automattic/newspack-popups/compare/v3.10.2...v3.10.3) (2026-04-13)
+
+
+### Bug Fixes
+
+* trigger release ([b04af9e](https://github.com/Automattic/newspack-popups/commit/b04af9e5e506a302cdb291ab16c6ef4faf9a4b7e))
+
+## [3.10.2](https://github.com/Automattic/newspack-popups/compare/v3.10.1...v3.10.2) (2026-04-06)
+
+
+### Bug Fixes
+
+* **inserter:** trim leading whitespace before content validation comparison ([e0b9f3f](https://github.com/Automattic/newspack-popups/commit/e0b9f3f9cc8a9c889ab4980bbe31aa7aa7c5d39a))
+
+## [3.10.1](https://github.com/Automattic/newspack-popups/compare/v3.10.0...v3.10.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* **block-theme:** move where above header campaign is inserted ([#1533](https://github.com/Automattic/newspack-popups/issues/1533)) ([eb6bfba](https://github.com/Automattic/newspack-popups/commit/eb6bfba2c7cd2560f7bf7aa04371aea467b5d291))
+
+# [3.10.0](https://github.com/Automattic/newspack-popups/compare/v3.9.2...v3.10.0) (2026-03-16)
+
+
+### Bug Fixes
+
+* add is-layout-constrained and is-layout-flow CSS classes for block themes ([#1521](https://github.com/Automattic/newspack-popups/issues/1521)) ([bafa61f](https://github.com/Automattic/newspack-popups/commit/bafa61fef81bdd81489abde5b139bc3b471d4791))
+* give more specific overlays priority by tweaking DOM order ([f0a64ef](https://github.com/Automattic/newspack-popups/commit/f0a64ef801e4987281619e9658d40e8379d06080))
+* give more specific overlays priority by tweaking DOM order ([b8abd19](https://github.com/Automattic/newspack-popups/commit/b8abd1917ee1ec02800590eb76b9a72f16f51c57))
+* iframe editor compatibility ([#1520](https://github.com/Automattic/newspack-popups/issues/1520)) ([222f33c](https://github.com/Automattic/newspack-popups/commit/222f33cea5ec039b501ab75b2753459d74b6d397))
+* leave inline (non-overlay) popups in default non-sort ([a9c6f64](https://github.com/Automattic/newspack-popups/commit/a9c6f6483d24207b8989e20126218d9663492a71))
+* run do_shortcode on manual, custom placements for the block theme ([#1526](https://github.com/Automattic/newspack-popups/issues/1526)) ([adbca1c](https://github.com/Automattic/newspack-popups/commit/adbca1cabc374591278b41f29749d2d0d0cbb6da))
+
+
+### Features
+
+* add AI agent guidelines ([#1530](https://github.com/Automattic/newspack-popups/issues/1530)) ([d0c4eb4](https://github.com/Automattic/newspack-popups/commit/d0c4eb4185fc005782f646ef5ce4ab8abb120691))
+
 ## [3.9.2](https://github.com/Automattic/newspack-popups/compare/v3.9.1...v3.9.2) (2026-02-13)
 
 

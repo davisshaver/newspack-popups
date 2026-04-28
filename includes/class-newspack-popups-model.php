@@ -52,6 +52,13 @@ final class Newspack_Popups_Model {
 	protected static $current_popup = null;
 
 	/**
+	 * Override for block theme detection (used in tests).
+	 *
+	 * @var boolean|null
+	 */
+	protected static $block_theme_override = null;
+
+	/**
 	 * Retrieve all Popups (first 100).
 	 *
 	 * @param  boolean $include_unpublished Whether to include unpublished posts.
@@ -953,6 +960,28 @@ final class Newspack_Popups_Model {
 	}
 
 	/**
+	 * Check if the current theme is a block theme.
+	 *
+	 * @return boolean True if the current theme is a block theme.
+	 */
+	public static function is_block_theme() {
+		if ( null !== self::$block_theme_override ) {
+			return self::$block_theme_override;
+		}
+
+		return function_exists( 'wp_is_block_theme' ) && wp_is_block_theme();
+	}
+
+	/**
+	 * Override block theme detection (intended for tests).
+	 *
+	 * @param boolean|null $is_block_theme Override value; null resets.
+	 */
+	public static function set_block_theme_override( $is_block_theme ) {
+		self::$block_theme_override = $is_block_theme;
+	}
+
+	/**
 	 * Generate markup for an inline popup.
 	 *
 	 * @param string $popup The popup object.
@@ -977,12 +1006,14 @@ final class Newspack_Popups_Model {
 		$is_newsletter_prompt = self::has_newsletter_prompt( $popup );
 		$classes              = [ 'newspack-popup-container', 'newspack-popup', 'hidden' ];
 		$classes[]            = 'above_header' === $popup['options']['placement'] ? 'newspack-above-header-popup' : null;
+		$classes[]            = 'above_header' === $popup['options']['placement'] && self::is_block_theme() ? 'has-global-padding' : null;
 		$classes[]            = ! self::is_above_header( $popup ) ? 'newspack-inline-popup' : null;
 		$classes[]            = 'publish' !== $popup['status'] ? 'newspack-inactive-popup-status' : null;
 		$classes[]            = $hide_border ? 'newspack-lightbox-no-border' : null;
 		$classes[]            = $large_border ? 'newspack-lightbox-large-border' : null;
 		$classes[]            = $no_padding ? 'newspack-lightbox-no-padding' : null;
 		$classes[]            = $is_newsletter_prompt ? 'newspack-newsletter-prompt-inline' : null;
+		$classes[]            = self::is_block_theme() ? 'is-layout-constrained' : null;
 		$classes              = array_merge( $classes, explode( ' ', $popup['options']['additional_classes'] ) );
 		$assigned_segments    = Newspack_Segments_Model::get_popup_segments_ids_string( $popup['id'] );
 		$frequency_config     = self::get_frequency_config( $popup );
@@ -1127,7 +1158,7 @@ final class Newspack_Popups_Model {
 							<?php echo ! empty( $popup['options']['featured_image_id'] ) ? wp_get_attachment_image( $popup['options']['featured_image_id'], 'large' ) : get_the_post_thumbnail( $popup['id'], 'large' ); ?>
 						</div>
 					<?php endif; ?>
-					<div class="newspack-popup__content">
+					<div class="newspack-popup__content <?php echo esc_attr( self::is_block_theme() ? 'is-layout-flow' : '' ); ?>">
 						<?php echo do_shortcode( $body ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					</div>
 					<button class="newspack-lightbox__close" style="<?php echo esc_attr( $close_button_styles ); ?>" aria-label="<?php esc_html_e( 'Close Pop-up', 'newspack-popups' ); // phpcs:ignore WordPressVIPMinimum.Security.ProperEscapingFunction.htmlAttrNotByEscHTML ?>">
