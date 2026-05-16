@@ -1,6 +1,6 @@
 {
 	"name": "newspack-popups",
-	"version": "3.10.3",
+	"version": "3.11.0",
 	"author": "Automattic",
 	"main": "srsc/view/index.js",
 	"scripts": {
@@ -39,6 +39,6 @@
 		"newspack-components": "^4.3.0"
 	},
 	"devDependencies": {
-		"newspack-scripts": "^5.9.5"
+		"newspack-scripts": "^5.9.7"
 	}
 }
